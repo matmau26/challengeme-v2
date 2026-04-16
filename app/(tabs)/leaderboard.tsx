@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { useI18n } from "@/src/lib/i18n";
 import { useAuth } from "@/src/contexts/AuthContext";
@@ -179,6 +180,7 @@ function PodiumStep({
 export default function LeaderboardScreen() {
   const { lang } = useI18n();
   const { user } = useAuth();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const [rankingMode, setRankingMode] = useState<RankingMode>("score");
   const [filter, setFilter] = useState<FilterType>("global");
@@ -628,7 +630,7 @@ export default function LeaderboardScreen() {
         <View
           style={{
             position: "absolute",
-            bottom: 90,
+            bottom: tabBarHeight + 8,
             left: 16,
             right: 16,
           }}

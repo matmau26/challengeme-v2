@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import {
   View, Text, TouchableOpacity, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Linking,
 } from "react-native";
-import { useRouter, Link, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FadeInView } from "@/src/components/ui/FadeInView";
@@ -58,6 +58,7 @@ export default function AuthScreen() {
   };
 
   const handleSignUp = async () => {
+    console.log("[AUTH] tentative avec:", email);
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signUp({
@@ -75,6 +76,7 @@ export default function AuthScreen() {
     });
     setLoading(false);
     if (error) {
+      console.log("[AUTH] signUp error:", error.message);
       setError(translateError(error.message, lang));
     } else {
       setSuccess(
@@ -87,17 +89,20 @@ export default function AuthScreen() {
   };
 
   const handleLogin = async () => {
+    console.log("[AUTH] tentative avec:", email);
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
+      console.log("[AUTH] signIn error:", error.message);
       setError(translateError(error.message, lang));
     }
     // Auth listener in AuthContext handles session update & NavigationGuard redirects
   };
 
   const handleForgotPassword = async () => {
+    console.log("[AUTH] tentative avec:", email);
     if (!email) {
       setError(label("Entre ton email.", "Enter your email."));
       return;
@@ -107,6 +112,7 @@ export default function AuthScreen() {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (error) {
+      console.log("[AUTH] resetPassword error:", error.message);
       setError(translateError(error.message, lang));
     } else {
       setSuccess(label("Email envoyé ! Vérifie ta boîte mail.", "Email sent! Check your inbox."));
@@ -114,6 +120,7 @@ export default function AuthScreen() {
   };
 
   const handleSubmit = () => {
+    console.log("[AUTH] submit press — mode:", isForgotPassword ? "forgot" : isSignUp ? "signup" : "login", "email:", email, "isValid:", isValid);
     if (isForgotPassword) handleForgotPassword();
     else if (isSignUp) handleSignUp();
     else handleLogin();
@@ -295,11 +302,12 @@ export default function AuthScreen() {
                   </View>
                   <Text className="text-xs text-muted-foreground flex-1 leading-relaxed">
                     {label("J'accepte les ", "I accept the ")}
-                    <Link href="/(public)/terms">
-                      <Text className="text-primary font-bold">
-                        {label("Conditions Générales d'Utilisation", "Terms and Conditions")}
-                      </Text>
-                    </Link>
+                    <Text
+                      className="text-primary font-bold"
+                      onPress={() => Linking.openURL("https://challengeme.pro/terms")}
+                    >
+                      {label("Conditions Générales d'Utilisation", "Terms and Conditions")}
+                    </Text>
                     <Text className="text-destructive"> *</Text>
                   </Text>
                 </TouchableOpacity>

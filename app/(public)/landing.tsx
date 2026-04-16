@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, TouchableOpacity } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ScrollView, View, Text, TouchableOpacity, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Target, Zap, Share2 } from "lucide-react-native";
@@ -15,6 +16,45 @@ const CATEGORIES = [
   { label: "Extreme",     emoji: "\u26a1" },
   { label: "Fl\u00e9chettes", emoji: "\ud83c\udfaf" },
 ];
+
+function CategoriesMarquee() {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const [contentWidth, setContentWidth] = useState(0);
+
+  useEffect(() => {
+    if (contentWidth === 0) return;
+    const halfWidth = contentWidth / 2;
+    translateX.setValue(0);
+    const anim = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: -halfWidth,
+        duration: Math.max(8000, halfWidth * 30),
+        useNativeDriver: true,
+      }),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [contentWidth, translateX]);
+
+  return (
+    <View style={{ width: "100%", overflow: "hidden", paddingHorizontal: 16 }}>
+      <Animated.View
+        style={{ flexDirection: "row", transform: [{ translateX }] }}
+        onLayout={(e) => setContentWidth(e.nativeEvent.layout.width)}
+      >
+        {[...CATEGORIES, ...CATEGORIES].map((cat, i) => (
+          <View
+            key={i}
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border mr-2"
+          >
+            <Text>{cat.emoji}</Text>
+            <Text className="text-xs font-semibold text-foreground">{cat.label}</Text>
+          </View>
+        ))}
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function LandingScreen() {
   const { lang, setLang, t } = useI18n();
@@ -38,9 +78,9 @@ export default function LandingScreen() {
       <View className="flex-1 px-6 items-center">
         {/* Logo */}
         <FadeInView duration={600} className="mb-6 items-center">
-          <Text className="text-2xl font-black tracking-tight">
+          <Text className="text-2xl font-black tracking-tight text-center">
             <Text className="text-primary">ChallengeMe</Text>
-            <Text> \u26a1</Text>
+            <Text className="text-foreground">{" \u26a1"}</Text>
           </Text>
         </FadeInView>
 
@@ -55,70 +95,62 @@ export default function LandingScreen() {
         </FadeInView>
 
         {/* Stats */}
-        <FadeInView duration={500} delay={200} className="flex-row gap-6 mb-8 items-center">
+        <FadeInView duration={500} delay={200} className="flex-row gap-6 mb-8 items-center justify-center">
           <View className="items-center gap-0.5">
-            <Text className="font-black text-sm text-foreground">
+            <Text className="font-black text-sm text-foreground text-center">
               {lang === "fr" ? "52 d\u00e9fis" : "52 challenges"}
             </Text>
-            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest">
+            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest text-center">
               {lang === "fr" ? "& en croissance" : "& growing"}
             </Text>
           </View>
           <View className="w-px h-8 bg-border" />
           <View className="items-center gap-0.5">
-            <Text className="font-black text-sm text-primary">
+            <Text className="font-black text-sm text-primary text-center">
               {lang === "fr" ? "Gratuit" : "Free"}
             </Text>
-            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest">
+            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest text-center">
               {lang === "fr" ? "Pour toujours" : "Forever"}
             </Text>
           </View>
           <View className="w-px h-8 bg-border" />
           <View className="items-center gap-0.5">
-            <Text className="font-black text-sm text-foreground">{"\ud83c\udf0d"}</Text>
-            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest">
+            <Text className="font-black text-sm text-foreground text-center">{"\ud83c\udf0d"}</Text>
+            <Text className="text-[9px] text-muted-foreground uppercase tracking-widest text-center">
               {lang === "fr" ? "Classement mondial" : "World ranking"}
             </Text>
           </View>
         </FadeInView>
 
         {/* CTA */}
-        <FadeInView duration={600} delay={300} className="w-full max-w-xs mb-3">
+        <FadeInView duration={600} delay={300} className="w-full max-w-xs mb-3 items-center">
           <TouchableOpacity
             onPress={() => router.push("/(public)/auth")}
             className="w-full py-4 px-6 rounded-xl bg-primary items-center"
             activeOpacity={0.85}
           >
-            <Text className="font-black text-base text-primary-foreground">{t("hero.cta")}</Text>
+            <Text className="font-black text-base text-primary-foreground text-center">{t("hero.cta")}</Text>
           </TouchableOpacity>
         </FadeInView>
 
         {/* Login link */}
-        <FadeInView duration={400} delay={400} className="mb-8">
+        <FadeInView duration={400} delay={400} className="mb-8 items-center">
           <TouchableOpacity
             onPress={() => router.push({ pathname: "/(public)/auth", params: { mode: "login" } })}
           >
-            <Text className="text-xs text-muted-foreground underline">
+            <Text className="text-xs text-muted-foreground underline text-center">
               {lang === "fr" ? "D\u00e9j\u00e0 un compte ? Connexion" : "Already have an account? Sign in"}
             </Text>
           </TouchableOpacity>
         </FadeInView>
+      </View>
 
-        {/* Categories scroll */}
-        <FadeInView duration={600} delay={450} className="w-full mb-12">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-            {[...CATEGORIES, ...CATEGORIES].map((cat, i) => (
-              <View
-                key={i}
-                className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border mr-2"
-              >
-                <Text>{cat.emoji}</Text>
-                <Text className="text-xs font-semibold text-foreground">{cat.label}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </FadeInView>
+      {/* Categories marquee (full-width, horizontally padded) */}
+      <FadeInView duration={600} delay={450} className="w-full mb-12">
+        <CategoriesMarquee />
+      </FadeInView>
 
+      <View className="flex-1 px-6 items-center">
         {/* 3 steps */}
         <FadeInView duration={600} delay={550} className="flex-row gap-4 max-w-sm w-full mb-8">
           <StepCard icon={<Target size={24} color="#00FF87" />} title={t("hero.step1")} desc={t("hero.step1d")} />
@@ -127,7 +159,7 @@ export default function LandingScreen() {
         </FadeInView>
 
         {/* Trust footer */}
-        <FadeInView duration={400} delay={700}>
+        <FadeInView duration={400} delay={700} className="items-center">
           <Text className="text-[10px] text-muted-foreground text-center">
             {lang === "fr"
               ? "\ud83d\udd12 Gratuit \u00b7 Sans carte bancaire \u00b7 iOS & Android"

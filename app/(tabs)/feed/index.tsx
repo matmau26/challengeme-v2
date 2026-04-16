@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -49,6 +49,12 @@ export default function FeedScreen() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
+  const listRef = useRef<FlatList>(null);
+
+  const handleCategoryChange = (cat: string) => {
+    setActiveCategory(cat);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ["challenges-feed"],
@@ -248,7 +254,7 @@ export default function FeedScreen() {
               return (
                 <TouchableOpacity
                   key={cat}
-                  onPress={() => setActiveCategory(cat)}
+                  onPress={() => handleCategoryChange(cat)}
                   className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full ${
                     active ? "bg-primary" : "bg-muted"
                   }`}
@@ -273,6 +279,7 @@ export default function FeedScreen() {
       </View>
 
       <FlatList
+        ref={listRef}
         data={isLoading ? [] : filtered}
         keyExtractor={(item: any) => item?.id || String(Math.random())}
         renderItem={renderItem}

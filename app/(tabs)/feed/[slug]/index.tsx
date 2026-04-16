@@ -373,7 +373,7 @@ export default function ChallengeDetailScreen() {
         >
           {/* Back */}
           <TouchableOpacity
-            onPress={() => router.replace({ pathname: "/(tabs)/feed/" })}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace({ pathname: "/(tabs)/feed/" }))}
             className="flex-row items-center gap-1 mb-4"
           >
             <ChevronLeft size={20} color="#888888" />

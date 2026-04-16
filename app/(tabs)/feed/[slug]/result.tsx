@@ -136,10 +136,11 @@ export default function ResultScreen() {
     : "";
 
   const handleShare = async () => {
+    const badgeLabel = lang === "fr" ? badgeConfig.label_fr : badgeConfig.label_en;
     const shareText =
       lang === "fr"
-        ? `J'ai scor\u00e9 ${score} XP sur "${title}" ! Peux-tu me battre ? challengeme.pro`
-        : `I scored ${score} XP on "${title}"! Can you beat me? challengeme.pro`;
+        ? `\u{1F3C6} ${score} XP sur "${title}" (${badgeLabel} \u2013 Rang #${rank}). Peux-tu me battre ? \u{1F449} https://challengeme.pro`
+        : `\u{1F3C6} ${score} XP on "${title}" (${badgeLabel} \u2013 Rank #${rank}). Can you beat me? \u{1F449} https://challengeme.pro`;
     try {
       await Share.share({ message: shareText });
     } catch {
