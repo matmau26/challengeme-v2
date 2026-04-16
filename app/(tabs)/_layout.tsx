@@ -61,9 +61,9 @@ function TabsNavigator() {
 }
 
 export default function TabsLayout() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator color="#00FF87" size="large" />
