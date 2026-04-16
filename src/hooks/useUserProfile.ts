@@ -2,6 +2,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 
+const getFallbackUrl = (fileName: string) => {
+  try {
+    const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
+    return data?.publicUrl || "";
+  } catch {
+    return "";
+  }
+};
+
+export function avatarWithCache(url: string | null | undefined, gender?: string | null): string {
+  const DEFAULT_MALE = getFallbackUrl("default-avatar-male.png");
+  const DEFAULT_FEMALE = getFallbackUrl("default-avatar-female.png");
+
+  if (!url || typeof url !== "string" || url.trim().length === 0 || url.includes("default-avatar.png")) {
+    const isFemale = String(gender || "").toLowerCase() === "femme";
+    return isFemale ? DEFAULT_FEMALE : DEFAULT_MALE;
+  }
+  return String(url);
+}
+
 export function useUserProfile() {
   const { user } = useAuth();
 
