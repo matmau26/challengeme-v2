@@ -219,6 +219,14 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      {/* Header logo */}
+      <View className="px-4 pt-3 pb-2 items-center">
+        <Text className="text-xl font-black tracking-tight">
+          <Text className="text-primary">ChallengeMe</Text>
+          <Text className="text-foreground"> ⚡</Text>
+        </Text>
+      </View>
+
       {/* Category filter bar */}
       <View className="bg-background px-4 pb-2 pt-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>

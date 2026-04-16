@@ -116,8 +116,8 @@ function SelectBtn({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`py-2 px-3 rounded-lg border items-center justify-center ${
-        active ? "bg-primary border-primary" : "bg-muted border-border"
+      className={`py-2 px-3 rounded-xl border items-center justify-center ${
+        active ? "bg-primary/20 border-primary" : "bg-muted/30 border-transparent"
       }`}
     >
       {children}
@@ -274,7 +274,7 @@ export default function SettingsScreen() {
                 <View key={g.value} className={`flex-1 ${i === 0 ? "mr-2" : ""}`}>
                   <SelectBtn active={gender === g.value} onPress={() => setGender(g.value)}>
                     <Text
-                      className={`text-xs font-bold ${gender === g.value ? "text-black" : "text-muted-foreground"}`}
+                      className={`text-xs font-bold ${gender === g.value ? "text-primary" : "text-muted-foreground"}`}
                     >
                       {lang === "fr" ? g.label_fr : g.label_en}
                     </Text>
@@ -289,7 +289,7 @@ export default function SettingsScreen() {
               {AGE_BRACKETS.map((a) => (
                 <View key={a} className="mr-2 mb-2">
                   <SelectBtn active={ageBracket === a} onPress={() => setAgeBracket(a)}>
-                    <Text className={`text-xs font-bold ${ageBracket === a ? "text-black" : "text-muted-foreground"}`}>
+                    <Text className={`text-xs font-bold ${ageBracket === a ? "text-primary" : "text-muted-foreground"}`}>
                       {a}
                     </Text>
                   </SelectBtn>
@@ -305,11 +305,11 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     key={c.value}
                     onPress={() => { setContinent(c.value); setCountry(""); }}
-                    className={`px-3 py-2 rounded-lg border mr-2 ${
-                      continent === c.value ? "bg-primary border-primary" : "bg-muted border-border"
+                    className={`py-2 px-3 rounded-xl border mr-2 mb-2 ${
+                      continent === c.value ? "bg-primary/20 border-primary" : "bg-muted/30 border-transparent"
                     }`}
                   >
-                    <Text className={`text-xs font-bold ${continent === c.value ? "text-black" : "text-muted-foreground"}`}>
+                    <Text className={`text-xs font-bold ${continent === c.value ? "text-primary" : "text-muted-foreground"}`}>
                       {lang === "fr" ? c.label_fr : c.label_en}
                     </Text>
                   </TouchableOpacity>
@@ -326,11 +326,11 @@ export default function SettingsScreen() {
                     <TouchableOpacity
                       key={c.value}
                       onPress={() => setCountry(c.value)}
-                      className={`py-2 px-3 rounded-lg border mr-2 mb-2 ${
-                        country === c.value ? "bg-primary border-primary" : "bg-muted border-border"
+                      className={`py-2 px-3 rounded-xl border mr-2 mb-2 ${
+                        country === c.value ? "bg-primary/20 border-primary" : "bg-muted/30 border-transparent"
                       }`}
                     >
-                      <Text className={`text-xs font-bold ${country === c.value ? "text-black" : "text-muted-foreground"}`}>
+                      <Text className={`text-xs font-bold ${country === c.value ? "text-primary" : "text-muted-foreground"}`}>
                         {lang === "fr" ? c.label_fr : c.label_en}
                       </Text>
                     </TouchableOpacity>
@@ -345,7 +345,7 @@ export default function SettingsScreen() {
               {(["metric", "imperial"] as const).map((u, i) => (
                 <View key={u} className={`flex-1 ${i === 0 ? "mr-2" : ""}`}>
                   <SelectBtn active={unitSystem === u} onPress={() => setUnitSystem(u)}>
-                    <Text className={`text-xs font-bold ${unitSystem === u ? "text-black" : "text-muted-foreground"}`}>
+                    <Text className={`text-xs font-bold ${unitSystem === u ? "text-primary" : "text-muted-foreground"}`}>
                       {u === "metric"
                         ? lang === "fr" ? "Métrique (kg, km)" : "Metric (kg, km)"
                         : lang === "fr" ? "Impérial (lbs, mi)" : "Imperial (lbs, mi)"}
@@ -361,7 +361,7 @@ export default function SettingsScreen() {
               {(["fr", "en"] as const).map((l, i) => (
                 <View key={l} className={`flex-1 ${i === 0 ? "mr-2" : ""}`}>
                   <SelectBtn active={lang === l} onPress={() => setLang(l)}>
-                    <Text className={`text-xs font-bold ${lang === l ? "text-black" : "text-muted-foreground"}`}>
+                    <Text className={`text-xs font-bold ${lang === l ? "text-primary" : "text-muted-foreground"}`}>
                       {l === "fr" ? "Français" : "English"}
                     </Text>
                   </SelectBtn>

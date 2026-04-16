@@ -539,49 +539,48 @@ export default function LeaderboardScreen() {
                 flexDirection: "row",
                 alignItems: "flex-end",
                 marginBottom: 32,
-                height: 224,
               }}
             >
-              <View style={{ flex: 1, alignItems: "center" }}>
-                {top3[1] && (
-                  <PodiumStep
-                    user={top3[1]}
-                    rank={2}
-                    color="#94A3B8"
-                    bgColor="#94A3B81A"
-                    height={112}
-                    icon={<Medal size={24} color="#94A3B8" />}
-                    rankingMode={rankingMode}
-                  />
-                )}
-              </View>
-              <View style={{ flex: 1, alignItems: "center", zIndex: 10 }}>
-                {top3[0] && (
-                  <PodiumStep
-                    user={top3[0]}
-                    rank={1}
-                    color="#EAB308"
-                    bgColor="#EAB3081A"
-                    height={160}
-                    isFirst
-                    icon={<Crown size={32} color="#EAB308" />}
-                    rankingMode={rankingMode}
-                  />
-                )}
-              </View>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                {top3[2] && (
-                  <PodiumStep
-                    user={top3[2]}
-                    rank={3}
-                    color="#B45309"
-                    bgColor="#B453091A"
-                    height={80}
-                    icon={<Medal size={24} color="#B45309" />}
-                    rankingMode={rankingMode}
-                  />
-                )}
-              </View>
+              {top3[1] ? (
+                <PodiumStep
+                  user={top3[1]}
+                  rank={2}
+                  color="#94A3B8"
+                  bgColor="#94A3B81A"
+                  height={96}
+                  icon={<Medal size={24} color="#94A3B8" />}
+                  rankingMode={rankingMode}
+                />
+              ) : (
+                <View style={{ flex: 1 }} />
+              )}
+              {top3[0] ? (
+                <PodiumStep
+                  user={top3[0]}
+                  rank={1}
+                  color="#EAB308"
+                  bgColor="#EAB3081A"
+                  height={140}
+                  isFirst
+                  icon={<Crown size={28} color="#EAB308" />}
+                  rankingMode={rankingMode}
+                />
+              ) : (
+                <View style={{ flex: 1 }} />
+              )}
+              {top3[2] ? (
+                <PodiumStep
+                  user={top3[2]}
+                  rank={3}
+                  color="#B45309"
+                  bgColor="#B453091A"
+                  height={72}
+                  icon={<Medal size={24} color="#B45309" />}
+                  rankingMode={rankingMode}
+                />
+              ) : (
+                <View style={{ flex: 1 }} />
+              )}
             </View>
 
             <View>
@@ -629,7 +628,7 @@ export default function LeaderboardScreen() {
         <View
           style={{
             position: "absolute",
-            bottom: 80,
+            bottom: 90,
             left: 16,
             right: 16,
           }}
@@ -638,8 +637,9 @@ export default function LeaderboardScreen() {
             duration={400}
             style={{
               backgroundColor: rankingMode === "kings" ? "#EAB308" : "#00FF87",
-              borderRadius: 16,
-              padding: 16,
+              borderRadius: 14,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
@@ -648,24 +648,24 @@ export default function LeaderboardScreen() {
             <View className="flex-row items-center">
               <View
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: 36,
+                  height: 36,
                   backgroundColor: "rgba(0,0,0,0.2)",
-                  borderRadius: 12,
+                  borderRadius: 10,
                   alignItems: "center",
                   justifyContent: "center",
-                  marginRight: 12,
+                  marginRight: 10,
                 }}
               >
-                <Text style={{ fontSize: 20, fontWeight: "900", color: "#000" }}>
+                <Text style={{ fontSize: 14, fontWeight: "900", color: "#000" }}>
                   #{myRank > 0 ? myRank : "--"}
                 </Text>
               </View>
               <View>
-                <Text style={{ fontSize: 10, fontWeight: "900", color: "#000", opacity: 0.8, textTransform: "uppercase", letterSpacing: 2 }}>
+                <Text style={{ fontSize: 9, fontWeight: "900", color: "#000", opacity: 0.8, textTransform: "uppercase", letterSpacing: 1.5 }}>
                   {lang === "fr" ? "Ton Classement" : "Your Rank"}
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#000" }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#000" }}>
                   Top {myPercentile}% {lang === "fr" ? "des athlètes" : "of athletes"}
                 </Text>
               </View>
@@ -673,12 +673,12 @@ export default function LeaderboardScreen() {
             <View
               style={{
                 alignItems: "flex-end",
-                paddingLeft: 16,
+                paddingLeft: 12,
                 borderLeftWidth: 1,
                 borderLeftColor: "rgba(0,0,0,0.1)",
               }}
             >
-              <Text style={{ fontSize: 24, fontWeight: "900", color: "#000", lineHeight: 24 }}>
+              <Text style={{ fontSize: 18, fontWeight: "900", color: "#000", lineHeight: 20 }}>
                 {myData.total_score.toLocaleString()}
               </Text>
               <Text style={{ fontSize: 8, fontWeight: "900", color: "#000", opacity: 0.8, textTransform: "uppercase" }}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -44,6 +44,9 @@ export default function ChallengeDetailScreen() {
   const { user } = useAuth();
   const { unitSystem } = useUnitSystem();
   const insets = useSafeAreaInsets();
+
+  const scrollRef = useRef<ScrollView>(null);
+  const formYRef = useRef<number>(0);
 
   const [showInput, setShowInput] = useState(false);
   const [minutesInput, setMinutesInput] = useState("");
@@ -362,6 +365,7 @@ export default function ChallengeDetailScreen() {
         className="flex-1"
       >
         <ScrollView
+          ref={scrollRef}
           className="flex-1"
           contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}
           showsVerticalScrollIndicator={false}
@@ -556,6 +560,12 @@ export default function ChallengeDetailScreen() {
 
           {/* Submission form */}
           {showInput && (
+            <View
+              onLayout={(e) => {
+                formYRef.current = e.nativeEvent.layout.y;
+                scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true });
+              }}
+            >
             <FadeInView duration={300} className="bg-card rounded-xl p-4 border border-border mb-4">
               {isTime && (
                 <View className="flex-row items-center gap-2 mb-4">
@@ -680,6 +690,7 @@ export default function ChallengeDetailScreen() {
                 )}
               </TouchableOpacity>
             </FadeInView>
+            </View>
           )}
         </ScrollView>
 
