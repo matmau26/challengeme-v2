@@ -37,7 +37,15 @@ function CategoriesMarquee() {
   }, [contentWidth, translateX]);
 
   return (
-    <View style={{ width: "100%", overflow: "hidden", paddingHorizontal: 16 }}>
+    <View
+      style={{
+        width: "100%",
+        overflow: "hidden",
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 16,
+      }}
+    >
       <Animated.View
         style={{ flexDirection: "row", transform: [{ translateX }] }}
         onLayout={(e) => setContentWidth(e.nativeEvent.layout.width)}

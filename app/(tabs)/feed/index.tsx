@@ -255,7 +255,7 @@ export default function FeedScreen() {
                 <TouchableOpacity
                   key={cat}
                   onPress={() => handleCategoryChange(cat)}
-                  className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full ${
+                  className={`flex-row items-center justify-center gap-1.5 px-4 py-2 rounded-full ${
                     active ? "bg-primary" : "bg-muted"
                   }`}
                 >

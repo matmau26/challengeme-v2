@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, View, Text } from "react-native";
 
 interface UserAvatarProps {
@@ -15,6 +15,10 @@ export function UserAvatar({ avatarUrl, username, size = "md" }: UserAvatarProps
   const dim = SIZE_MAP[size];
   const fontSize = FONT_SIZE_MAP[size];
   const initial = (username || "A").charAt(0).toUpperCase();
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [avatarUrl]);
 
   if (!avatarUrl || imgFailed) {
     return (

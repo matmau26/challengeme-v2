@@ -326,7 +326,7 @@ export default function LeaderboardScreen() {
     continentFilter !== "all" ? COUNTRIES_BY_CONTINENT[continentFilter] || [] : [];
 
   const filterBtnClass = (active: boolean) =>
-    `px-4 py-2 rounded-xl border ${
+    `px-4 py-2 rounded-full border items-center justify-center ${
       active
         ? "bg-primary/10 border-primary"
         : "bg-muted/30 border-transparent"
@@ -374,7 +374,7 @@ export default function LeaderboardScreen() {
               <TouchableOpacity
                 key={f}
                 onPress={() => resetFilters(f)}
-                className={`px-5 py-2.5 rounded-full mr-2 ${
+                className={`px-4 py-2 rounded-full items-center justify-center mr-2 ${
                   filter === f ? "bg-foreground" : "bg-muted/50"
                 }`}
               >
@@ -427,7 +427,7 @@ export default function LeaderboardScreen() {
                 <TouchableOpacity
                   key={g.value}
                   onPress={() => setGenderFilter(g.value)}
-                  className={`flex-1 py-2 rounded-xl border items-center ${i < 2 ? "mr-2" : ""} ${
+                  className={`flex-1 px-4 py-2 rounded-full border items-center justify-center ${i < 2 ? "mr-2" : ""} ${
                     genderFilter === g.value ? "bg-primary/10 border-primary" : "bg-muted/30 border-transparent"
                   }`}
                 >
@@ -630,7 +630,7 @@ export default function LeaderboardScreen() {
         <View
           style={{
             position: "absolute",
-            bottom: tabBarHeight + 8,
+            bottom: tabBarHeight,
             left: 16,
             right: 16,
           }}
