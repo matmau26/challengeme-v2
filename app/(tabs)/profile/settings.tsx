@@ -133,6 +133,7 @@ export default function SettingsScreen() {
 
   const [username, setUsername] = useState("");
   const [motto, setMotto] = useState("");
+  const [gymName, setGymName] = useState("");
   const [gender, setGender] = useState("homme");
   const [ageBracket, setAgeBracket] = useState("20-29");
   const [continent, setContinent] = useState("europe");
@@ -146,6 +147,7 @@ export default function SettingsScreen() {
     if (!profile || hydrated) return;
     setUsername(profile.username || "");
     setMotto(profile.mantra || "");
+    setGymName((profile as any).gym_name || "");
     setGender(profile.gender || "homme");
     setAgeBracket(profile.age_bracket || "20-29");
     setCountry(profile.country || "FR");
@@ -185,6 +187,7 @@ export default function SettingsScreen() {
       .update({
         username,
         mantra: motto || null,
+        gym_name: gymName.trim() || null,
         gender,
         age_bracket: ageBracket,
         country,
@@ -266,6 +269,19 @@ export default function SettingsScreen() {
               className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-foreground"
             />
             <Text className="text-[10px] text-muted-foreground mt-1 text-right">{motto.length}/60</Text>
+          </FieldGroup>
+
+          <FieldGroup label={lang === "fr" ? "Ma salle de sport" : "My Gym"}>
+            <TextInput
+              value={gymName}
+              onChangeText={(v) => setGymName(v.slice(0, 40))}
+              placeholder={lang === "fr" ? "Ex: Basic-Fit République" : "E.g., Basic-Fit Republic"}
+              placeholderTextColor="#888888"
+              maxLength={40}
+              autoCapitalize="words"
+              className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-foreground"
+            />
+            <Text className="text-[10px] text-muted-foreground mt-1 text-right">{gymName.length}/40</Text>
           </FieldGroup>
 
           <FieldGroup label={lang === "fr" ? "Genre" : "Gender"}>

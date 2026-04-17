@@ -45,5 +45,8 @@ export function useUserProfile() {
 export function useInvalidateProfile() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  return () => queryClient.invalidateQueries({ queryKey: ["user-profile-data", user?.id] });
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["user-profile-data", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["my-gym-name", user?.id] });
+  };
 }

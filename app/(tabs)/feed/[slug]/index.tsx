@@ -579,88 +579,106 @@ export default function ChallengeDetailScreen() {
                 scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true });
               }}
             >
-            <FadeInView duration={300} className="bg-card rounded-xl p-4 border border-border mb-4">
-              {isTime && (
-                <View className="flex-row items-center gap-2 mb-4">
-                  <View className="flex-1">
-                    <TextInput
-                      value={minutesInput}
-                      onChangeText={setMinutesInput}
-                      placeholder="0"
-                      placeholderTextColor="#888888"
-                      keyboardType="numeric"
-                      className="bg-muted border border-border rounded-lg px-4 py-3 text-foreground text-lg font-bold text-center"
-                    />
-                    <Text className="text-center text-[10px] text-muted-foreground font-bold mt-1">
-                      min
-                    </Text>
+            <FadeInView duration={300} className="bg-card rounded-2xl p-5 border border-border mb-4">
+              {/* Step 1 — Score */}
+              <View className="mb-5">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+                    <Text className="text-[11px] font-black text-black">1</Text>
                   </View>
-                  <Text className="text-xl font-black text-muted-foreground">:</Text>
-                  <View className="flex-1">
-                    <TextInput
-                      value={secondsInput}
-                      onChangeText={setSecondsInput}
-                      placeholder="00"
-                      placeholderTextColor="#888888"
-                      keyboardType="numeric"
-                      className="bg-muted border border-border rounded-lg px-4 py-3 text-foreground text-lg font-bold text-center"
-                    />
-                    <Text className="text-center text-[10px] text-muted-foreground font-bold mt-1">
-                      sec
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {(isWeight || isReps || isDistance || (!isTime && !isWeight && !isReps && !isDistance)) && (
-                <View className="mb-4">
-                  <Text className="text-sm font-bold text-foreground mb-2">
-                    {isWeight
-                      ? `${lang === "fr" ? "Charge" : "Weight"} (${unitSystem === "metric" ? "kg" : "lbs"})`
-                      : isReps
-                        ? category === "flechette" ? "Score (points)" : lang === "fr" ? "R\u00e9p\u00e9titions" : "Reps"
-                        : isDistance
-                          ? `Distance (${unitSystem === "metric" ? "km" : "mi"})`
-                          : lang === "fr" ? "Score" : "Score"}
+                  <Text className="text-sm font-black uppercase tracking-widest text-foreground">
+                    {isTime
+                      ? lang === "fr" ? "Ton temps" : "Your time"
+                      : isWeight
+                        ? `${lang === "fr" ? "Ta charge" : "Your weight"} (${unitSystem === "metric" ? "kg" : "lbs"})`
+                        : isReps
+                          ? category === "flechette"
+                            ? lang === "fr" ? "Tes points" : "Your points"
+                            : lang === "fr" ? "Tes répétitions" : "Your reps"
+                          : isDistance
+                            ? `${lang === "fr" ? "Ta distance" : "Your distance"} (${unitSystem === "metric" ? "km" : "mi"})`
+                            : lang === "fr" ? "Ton score" : "Your score"}
                   </Text>
+                </View>
+
+                {isTime ? (
+                  <View className="flex-row items-center gap-2">
+                    <View className="flex-1">
+                      <TextInput
+                        value={minutesInput}
+                        onChangeText={setMinutesInput}
+                        placeholder="0"
+                        placeholderTextColor="#888888"
+                        keyboardType="numeric"
+                        className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
+                      />
+                      <Text className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1.5">
+                        min
+                      </Text>
+                    </View>
+                    <Text className="text-2xl font-black text-primary">:</Text>
+                    <View className="flex-1">
+                      <TextInput
+                        value={secondsInput}
+                        onChangeText={setSecondsInput}
+                        placeholder="00"
+                        placeholderTextColor="#888888"
+                        keyboardType="numeric"
+                        className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
+                      />
+                      <Text className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1.5">
+                        sec
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
                   <TextInput
                     value={valueInput}
                     onChangeText={setValueInput}
                     placeholder={isWeight ? (unitSystem === "metric" ? "100" : "220") : isReps ? "25" : "0"}
                     placeholderTextColor="#888888"
                     keyboardType="decimal-pad"
-                    className="bg-muted border border-border rounded-lg px-4 py-3 text-foreground text-lg font-bold"
+                    className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
                   />
-                </View>
-              )}
+                )}
 
-              {estimatedScore !== null && (
-                <View className="flex-row items-center justify-between bg-primary/10 border border-primary/20 rounded-lg px-4 py-2 mb-4">
-                  <Text className="text-xs font-bold text-muted-foreground">
-                    {lang === "fr" ? "Score estim\u00e9" : "Estimated score"}
+                {estimatedScore !== null && (
+                  <View className="flex-row items-center justify-between bg-primary/10 border border-primary/30 rounded-xl px-4 py-2.5 mt-3">
+                    <Text className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      {lang === "fr" ? "Score estim\u00e9" : "Estimated score"}
+                    </Text>
+                    <Text className="text-lg font-black text-primary">{estimatedScore} XP</Text>
+                  </View>
+                )}
+
+                {formError && (
+                  <Text className="text-xs text-red-500 font-bold mt-3">{formError}</Text>
+                )}
+              </View>
+
+              {/* Step 2 — Challenge friend */}
+              <View className="mb-5">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-6 h-6 rounded-full bg-muted items-center justify-center">
+                    <Text className="text-[11px] font-black text-muted-foreground">2</Text>
+                  </View>
+                  <Text className="text-sm font-black uppercase tracking-widest text-foreground">
+                    {lang === "fr" ? "Défier un ami" : "Challenge a friend"}
                   </Text>
-                  <Text className="text-lg font-black text-primary">{estimatedScore} XP</Text>
+                  <Text className="text-[10px] text-muted-foreground font-bold">
+                    {lang === "fr" ? "(optionnel)" : "(optional)"}
+                  </Text>
                 </View>
-              )}
 
-              {formError && (
-                <Text className="text-xs text-red-500 font-bold mb-3">{formError}</Text>
-              )}
-
-              {/* Défier un ami */}
-              <View className="border-t border-border pt-4 mb-4">
-                <Text className="text-sm font-bold text-foreground mb-2">
-                  {lang === "fr" ? "⚔️  Défier un ami" : "⚔️  Challenge a friend"}
-                </Text>
                 {opponent ? (
-                  <View className="flex-row items-center bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
+                  <View className="flex-row items-center bg-primary/10 border border-primary/30 rounded-xl px-3 py-2.5">
                     <UserAvatar
                       avatarUrl={opponent.avatar_url}
                       username={opponent.username}
                       size="sm"
                     />
                     <View className="flex-1 ml-3">
-                      <Text className="text-foreground font-bold text-sm" numberOfLines={1}>
+                      <Text className="text-foreground font-black text-sm" numberOfLines={1}>
                         {opponent.username}
                       </Text>
                       <Text className="text-[10px] text-primary font-black uppercase tracking-widest">
@@ -687,23 +705,32 @@ export default function ChallengeDetailScreen() {
                 ) : (
                   <TouchableOpacity
                     onPress={() => setShowOpponentSearch(true)}
-                    className="w-full py-3 rounded-lg border-2 border-dashed border-border bg-muted flex-row items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl border border-dashed border-border bg-muted/50 flex-row items-center justify-center gap-2"
                   >
-                    <UserPlus size={16} color="#888888" />
-                    <Text className="text-xs font-bold text-muted-foreground">
+                    <UserPlus size={14} color="#888888" />
+                    <Text className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                       {lang === "fr" ? "Choisir un adversaire" : "Pick an opponent"}
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
 
-              {/* Proof upload */}
-              <View className="border-t border-border pt-4 mb-4">
-                <Text className="text-sm font-bold text-foreground mb-2">
-                  {lang === "fr" ? "\ud83d\udcce Preuve (Photo ou Vid\u00e9o)" : "\ud83d\udcce Proof (Photo or Video)"}
-                </Text>
+              {/* Step 3 — Proof */}
+              <View className="mb-5">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-6 h-6 rounded-full bg-muted items-center justify-center">
+                    <Text className="text-[11px] font-black text-muted-foreground">3</Text>
+                  </View>
+                  <Text className="text-sm font-black uppercase tracking-widest text-foreground">
+                    {lang === "fr" ? "Preuve" : "Proof"}
+                  </Text>
+                  <Text className="text-[10px] text-muted-foreground font-bold">
+                    {lang === "fr" ? "(photo ou vidéo)" : "(photo or video)"}
+                  </Text>
+                </View>
+
                 {proofUri ? (
-                  <View className="relative rounded-lg overflow-hidden border border-border">
+                  <View className="relative rounded-xl overflow-hidden border border-border">
                     <Image
                       source={{ uri: proofUri }}
                       style={{ width: "100%", height: 160 }}
@@ -711,44 +738,50 @@ export default function ChallengeDetailScreen() {
                     />
                     <TouchableOpacity
                       onPress={() => { setProofUri(null); setProofIsVideo(false); }}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full items-center justify-center"
-                      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full items-center justify-center"
+                      style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
                     >
-                      <X size={12} color="#FFFFFF" />
+                      <X size={13} color="#FFFFFF" />
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity
                     onPress={handlePickProof}
-                    className="w-full py-3 rounded-lg border-2 border-dashed border-border bg-muted flex-row items-center justify-center gap-2"
+                    className={`w-full py-3 rounded-xl border border-dashed ${
+                      proofError ? "border-red-500 bg-red-500/5" : "border-border bg-muted/50"
+                    } flex-row items-center justify-center gap-2`}
                   >
-                    <Camera size={16} color="#888888" />
-                    <Text className="text-xs font-bold text-muted-foreground">
-                      {lang === "fr" ? "Filmer ou importer une preuve" : "Record or upload proof"}
+                    <Camera size={14} color={proofError ? "#EF4444" : "#888888"} />
+                    <Text
+                      className={`text-[11px] font-black uppercase tracking-widest ${
+                        proofError ? "text-red-500" : "text-muted-foreground"
+                      }`}
+                    >
+                      {lang === "fr" ? "Filmer ou importer" : "Record or upload"}
                     </Text>
                   </TouchableOpacity>
                 )}
-              </View>
 
-              {proofError && (
-                <Text className="text-xs text-red-500 font-bold mb-3">
-                  {lang === "fr"
-                    ? "\u274c Preuve obligatoire pour valider ce top classement (70+ pts) !"
-                    : "\u274c Proof required for this top rank (70+ pts)!"}
-                </Text>
-              )}
+                {proofError && (
+                  <Text className="text-[11px] text-red-500 font-bold mt-2">
+                    {lang === "fr"
+                      ? "\u274c Preuve obligatoire pour valider ce top classement (70+ pts)"
+                      : "\u274c Proof required for this top rank (70+ pts)"}
+                  </Text>
+                )}
+              </View>
 
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={uploading}
-                className="w-full py-3 rounded-lg bg-primary items-center"
+                className="w-full py-4 rounded-xl bg-primary items-center"
                 style={{ opacity: uploading ? 0.6 : 1 }}
               >
                 {uploading ? (
                   <ActivityIndicator color="#000000" />
                 ) : (
-                  <Text className="text-black font-extrabold text-sm">
-                    {lang === "fr" ? "SOUMETTRE \u2192" : "SUBMIT \u2192"}
+                  <Text className="text-black font-black text-sm uppercase tracking-widest">
+                    {lang === "fr" ? "Soumettre \u2192" : "Submit \u2192"}
                   </Text>
                 )}
               </TouchableOpacity>

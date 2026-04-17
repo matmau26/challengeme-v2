@@ -1,15 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import {
   Trophy, Share2, RefreshCcw, Home, Crown, Flame, ThumbsUp, Sprout, ListOrdered,
@@ -27,8 +28,11 @@ import {
 import { getCategoryIcon } from "@/src/lib/categoryIcon";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { useUserProfile } from "@/src/hooks/useUserProfile";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
+import { ShareCard } from "@/src/components/ShareCard";
 
 const renderBadgeIcon = (badge: string, color: string) => {
   const props = { size: 52, strokeWidth: 1.5, color };
@@ -63,6 +67,10 @@ export default function ResultScreen() {
   const { lang } = useI18n();
   const { unitSystem } = useUnitSystem();
   const tabBarHeight = useBottomTabBarHeight();
+  const { user } = useAuth();
+  const { data: profile } = useUserProfile();
+  const shareRef = useRef<View>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
@@ -138,14 +146,25 @@ export default function ResultScreen() {
     : "";
 
   const handleShare = async () => {
-    const shareText =
-      lang === "fr"
-        ? `J'ai explos\u00e9 mon record sur ${title} avec un score de ${score} ! Viens me battre sur ChallengeMe \u{1F680}`
-        : `I just smashed my record on ${title} with a score of ${score}! Come beat me on ChallengeMe \u{1F680}`;
+    if (isSharing) return;
+    setIsSharing(true);
     try {
-      await Share.share({ message: shareText });
+      const uri = await captureRef(shareRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      const available = await Sharing.isAvailableAsync();
+      if (available) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "image/png",
+          dialogTitle: lang === "fr" ? "Partager ton exploit" : "Share your performance",
+        });
+      }
     } catch {
-      // User cancelled
+      // User cancelled or capture failed
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -160,11 +179,35 @@ export default function ResultScreen() {
     );
   }
 
+  const username = profile?.username || user?.email?.split("@")[0] || "Athlete";
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <View
+        style={{ position: "absolute", left: -9999, top: 0 }}
+        pointerEvents="none"
+      >
+        <View collapsable={false}>
+          <ShareCard
+            ref={shareRef}
+            title={title}
+            badge={badge}
+            score={score}
+            username={username}
+            lang={lang}
+            performance={displayValue}
+            rank={rank}
+          />
+        </View>
+      </View>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: tabBarHeight + 24 }}
+        contentContainerStyle={{
+          padding: 16,
+          paddingBottom: tabBarHeight + 24,
+          flexGrow: 1,
+          justifyContent: "center",
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Challenge header */}
@@ -230,7 +273,7 @@ export default function ResultScreen() {
           >
             {score.toLocaleString()}
           </Text>
-          <View className="flex-row items-center gap-2">
+          <View className="flex-row items-center gap-2 mt-6">
             <View style={{ width: 24, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
             <Text className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
               XP Points
@@ -247,7 +290,7 @@ export default function ResultScreen() {
           ].map((s, i) => (
             <View
               key={i}
-              className="flex-1 bg-card/60 border border-border p-3 rounded-2xl items-center"
+              className="flex-1 bg-card/60 border border-border py-4 px-3 rounded-2xl items-center"
             >
               <Text className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
                 {s.label}
@@ -277,31 +320,47 @@ export default function ResultScreen() {
         </FadeInView>
 
         {/* Action buttons */}
-        <FadeInView duration={400} delay={500} className="gap-2 mx-2">
+        <FadeInView duration={400} delay={500} className="gap-3 mx-2">
           <TouchableOpacity
             onPress={handleShare}
-            className="w-full py-3.5 rounded-2xl bg-primary flex-row items-center justify-center gap-2"
+            disabled={isSharing}
+            activeOpacity={0.85}
+            className="w-full py-5 rounded-2xl bg-orange-500 flex-row items-center justify-center gap-2"
+            style={{
+              shadowColor: "#F97316",
+              shadowOpacity: 0.4,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+              opacity: isSharing ? 0.6 : 1,
+            }}
           >
-            <Share2 size={16} color="#000" />
-            <Text className="text-black font-black text-sm uppercase tracking-tight">
-              {lang === "fr" ? "Prouve-le \u00e0 tes amis" : "Prove it to your friends"}
+            {isSharing ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Share2 size={20} color="#000" />
+            )}
+            <Text className="text-black font-black text-base uppercase tracking-wide">
+              {isSharing
+                ? lang === "fr" ? "G\u00e9n\u00e9ration..." : "Generating..."
+                : lang === "fr" ? "Partage ton exploit" : "Share your performance"}
             </Text>
           </TouchableOpacity>
 
-          <View className="flex-row gap-2 pt-1">
+          <View className="flex-row gap-3">
             {[
               {
-                icon: <RefreshCcw size={12} color="#888888" />,
-                label: lang === "fr" ? "R\u00c9ESSAYER \ud83d\udd04" : "TRY AGAIN \ud83d\udd04",
+                icon: <RefreshCcw size={14} color="#888888" />,
+                label: lang === "fr" ? "R\u00e9essayer" : "Try again",
                 onPress: () => router.back(),
               },
               {
-                icon: <ListOrdered size={12} color="#888888" />,
+                icon: <ListOrdered size={14} color="#888888" />,
                 label: lang === "fr" ? "Classement" : "Leaderboard",
                 onPress: () => router.replace({ pathname: "/(tabs)/leaderboard/" }),
               },
               {
-                icon: <Home size={12} color="#888888" />,
+                icon: <Home size={14} color="#888888" />,
                 label: lang === "fr" ? "Accueil" : "Home",
                 onPress: () => router.replace({ pathname: "/(tabs)/feed/" }),
               },
@@ -309,10 +368,10 @@ export default function ResultScreen() {
               <TouchableOpacity
                 key={i}
                 onPress={btn.onPress}
-                className="flex-1 py-2.5 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-2"
               >
                 {btn.icon}
-                <Text className="text-muted-foreground font-bold text-[9px] uppercase">
+                <Text className="text-muted-foreground font-bold text-[10px] uppercase">
                   {btn.label}
                 </Text>
               </TouchableOpacity>

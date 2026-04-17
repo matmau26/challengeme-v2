@@ -203,7 +203,7 @@ export default function FeedScreen() {
             </View>
           )}
 
-          <View className="flex-row items-start gap-3">
+          <View className="flex-row items-center gap-3">
             <Text style={{ fontSize: 30 }}>{emoji}</Text>
             <View className="flex-1">
               <Text className="font-bold text-sm text-foreground mb-1" numberOfLines={1}>
@@ -217,14 +217,16 @@ export default function FeedScreen() {
                     {lang === "fr" ? catConfig.label_fr : catConfig.label_en}
                   </Text>
                 </View>
-                <DifficultyDots
-                  difficulty={Number(challenge.difficulty) || 1}
-                  color={catConfig.color || "#888888"}
-                />
+                <View className="ml-2">
+                  <DifficultyDots
+                    difficulty={Number(challenge.difficulty) || 1}
+                    color={catConfig.color || "#888888"}
+                  />
+                </View>
               </View>
               <View className="flex-row items-center gap-3 flex-wrap">
                 {attemptCount > 0 && (
-                  <Text className="text-[10px] text-muted-foreground font-bold">
+                  <Text className="text-[10px] text-muted-foreground font-bold mt-1">
                     {attemptCount}{" "}
                     {lang === "fr"
                       ? attemptCount > 1 ? "tentatives" : "tentative"
@@ -275,9 +277,9 @@ export default function FeedScreen() {
       </View>
 
       {/* Category filter bar */}
-      <View className="bg-background px-4 pb-2 pt-2">
+      <View className="bg-background px-4 pb-2 pt-4">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-2">
+          <View className="flex-row gap-2 items-center">
             <TouchableOpacity
               onPress={() => {
                 if (!myGymName) return;
@@ -285,17 +287,19 @@ export default function FeedScreen() {
                 listRef.current?.scrollToOffset({ offset: 0, animated: true });
               }}
               disabled={!myGymName}
-              className={`flex-row items-center justify-center gap-1.5 px-4 py-2 rounded-full border ${
+              style={{ height: 30 }}
+              className={`flex-row items-center justify-center gap-1.5 px-4 rounded-full ${
                 gymOnly
-                  ? "bg-primary border-primary"
+                  ? "bg-primary"
                   : myGymName
-                    ? "bg-muted border-border"
-                    : "bg-muted border-border opacity-40"
+                    ? "bg-muted"
+                    : "bg-muted opacity-40"
               }`}
             >
-              <Dumbbell size={12} color={gymOnly ? "#000" : "#888888"} />
+              <Dumbbell size={11} color={gymOnly ? "#000" : "#888888"} />
               <Text
-                className={`text-xs font-bold ${gymOnly ? "text-black" : "text-muted-foreground"}`}
+                style={{ lineHeight: 13, includeFontPadding: false }}
+                className={`text-[11px] font-black uppercase tracking-widest ${gymOnly ? "text-black" : "text-muted-foreground"}`}
                 numberOfLines={1}
               >
                 {lang === "fr" ? "Ma Salle" : "My Gym"}
@@ -319,16 +323,19 @@ export default function FeedScreen() {
                 <TouchableOpacity
                   key={cat}
                   onPress={() => handleCategoryChange(cat)}
-                  className={`flex-row items-center justify-center gap-1.5 px-4 py-2 rounded-full ${
+                  style={{ height: 30 }}
+                  className={`flex-row items-center justify-center gap-1.5 px-4 rounded-full ${
                     active ? "bg-primary" : "bg-muted"
                   }`}
                 >
                   <Text
-                    className={`text-xs font-bold ${active ? "text-black" : "text-muted-foreground"}`}
+                    style={{ lineHeight: 13, includeFontPadding: false }}
+                    className={`text-[11px] font-black uppercase tracking-widest ${active ? "text-black" : "text-muted-foreground"}`}
                   >
                     {catLabel}
                   </Text>
                   <Text
+                    style={{ lineHeight: 11, includeFontPadding: false }}
                     className={`text-[9px] font-black ${
                       active ? "text-black/70" : "text-muted-foreground/50"
                     }`}
