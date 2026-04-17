@@ -8,6 +8,7 @@ import {
   Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import {
@@ -61,6 +62,7 @@ export default function ResultScreen() {
 
   const { lang } = useI18n();
   const { unitSystem } = useUnitSystem();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
@@ -162,7 +164,7 @@ export default function ResultScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: tabBarHeight + 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Challenge header */}

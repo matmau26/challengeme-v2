@@ -325,18 +325,20 @@ export default function LeaderboardScreen() {
   const continentCountries =
     continentFilter !== "all" ? COUNTRIES_BY_CONTINENT[continentFilter] || [] : [];
 
+  console.log("[LOG] données Supabase :", leaderboardData);
+
   const filterBtnClass = (active: boolean) =>
-    `px-4 py-2 rounded-full border items-center justify-center ${
+    `px-4 py-2 rounded-full items-center justify-center mr-2 ${
       active
-        ? "bg-primary/10 border-primary"
-        : "bg-muted/30 border-transparent"
+        ? "bg-primary/10 border border-primary"
+        : "bg-muted/30"
     }`;
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: tabBarHeight + 16 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row items-center mb-6">
@@ -396,7 +398,7 @@ export default function LeaderboardScreen() {
               <View className="flex-row">
                 <TouchableOpacity
                   onPress={() => setActivityFilter("all")}
-                  className={`${filterBtnClass(activityFilter === "all")} mr-2`}
+                  className={`${filterBtnClass(activityFilter === "all")}`}
                 >
                   <Text className={`text-[10px] font-black ${activityFilter === "all" ? "text-primary" : "text-muted-foreground"}`}>
                     {lang === "fr" ? "Toutes" : "All"}
@@ -406,7 +408,7 @@ export default function LeaderboardScreen() {
                   <TouchableOpacity
                     key={act}
                     onPress={() => setActivityFilter(act)}
-                    className={`${filterBtnClass(activityFilter === act)} mr-2`}
+                    className={`${filterBtnClass(activityFilter === act)}`}
                   >
                     <Text className={`text-[10px] font-black ${activityFilter === act ? "text-primary" : "text-muted-foreground"}`}>
                       {getActivityLabel(act)}
@@ -423,13 +425,11 @@ export default function LeaderboardScreen() {
                 { value: "all", fr: "Tous", en: "All" },
                 { value: "male", fr: "♂ Homme", en: "♂ Male" },
                 { value: "female", fr: "♀ Femme", en: "♀ Female" },
-              ].map((g, i) => (
+              ].map((g) => (
                 <TouchableOpacity
                   key={g.value}
                   onPress={() => setGenderFilter(g.value)}
-                  className={`flex-1 px-4 py-2 rounded-full border items-center justify-center ${i < 2 ? "mr-2" : ""} ${
-                    genderFilter === g.value ? "bg-primary/10 border-primary" : "bg-muted/30 border-transparent"
-                  }`}
+                  className={filterBtnClass(genderFilter === g.value)}
                 >
                   <Text className={`text-[10px] font-black ${genderFilter === g.value ? "text-primary" : "text-muted-foreground"}`}>
                     {lang === "fr" ? g.fr : g.en}
@@ -444,7 +444,7 @@ export default function LeaderboardScreen() {
               <View className="flex-row">
                 <TouchableOpacity
                   onPress={() => setAgeFilter("")}
-                  className={`${filterBtnClass(ageFilter === "")} mr-2`}
+                  className={`${filterBtnClass(ageFilter === "")}`}
                 >
                   <Text className={`text-[10px] font-black ${ageFilter === "" ? "text-primary" : "text-muted-foreground"}`}>
                     {lang === "fr" ? "Tous" : "All"}
@@ -454,7 +454,7 @@ export default function LeaderboardScreen() {
                   <TouchableOpacity
                     key={age}
                     onPress={() => setAgeFilter(age)}
-                    className={`${filterBtnClass(ageFilter === age)} mr-2`}
+                    className={`${filterBtnClass(ageFilter === age)}`}
                   >
                     <Text className={`text-[10px] font-black ${ageFilter === age ? "text-primary" : "text-muted-foreground"}`}>
                       {age}
@@ -471,7 +471,7 @@ export default function LeaderboardScreen() {
                 <View className="flex-row mb-2">
                   <TouchableOpacity
                     onPress={() => { setContinentFilter("all"); setCountryFilter("all"); }}
-                    className={`${filterBtnClass(continentFilter === "all")} mr-2`}
+                    className={`${filterBtnClass(continentFilter === "all")}`}
                   >
                     <Text className={`text-[10px] font-black ${continentFilter === "all" ? "text-primary" : "text-muted-foreground"}`}>
                       {lang === "fr" ? "Monde" : "World"}
@@ -481,7 +481,7 @@ export default function LeaderboardScreen() {
                     <TouchableOpacity
                       key={c.value}
                       onPress={() => { setContinentFilter(c.value); setCountryFilter("all"); }}
-                      className={`${filterBtnClass(continentFilter === c.value)} mr-2`}
+                      className={`${filterBtnClass(continentFilter === c.value)}`}
                     >
                       <Text className={`text-[10px] font-black ${continentFilter === c.value ? "text-primary" : "text-muted-foreground"}`}>
                         {lang === "fr" ? c.label_fr : c.label_en}
@@ -495,7 +495,7 @@ export default function LeaderboardScreen() {
                   <View className="flex-row">
                     <TouchableOpacity
                       onPress={() => setCountryFilter("all")}
-                      className={`${filterBtnClass(countryFilter === "all")} mr-2`}
+                      className={`${filterBtnClass(countryFilter === "all")}`}
                     >
                       <Text className={`text-[10px] font-black ${countryFilter === "all" ? "text-primary" : "text-muted-foreground"}`}>
                         {lang === "fr" ? "Tous" : "All"}
@@ -505,7 +505,7 @@ export default function LeaderboardScreen() {
                       <TouchableOpacity
                         key={c.value}
                         onPress={() => setCountryFilter(c.value)}
-                        className={`${filterBtnClass(countryFilter === c.value)} mr-2`}
+                        className={`${filterBtnClass(countryFilter === c.value)}`}
                       >
                         <Text className={`text-[10px] font-black ${countryFilter === c.value ? "text-primary" : "text-muted-foreground"}`}>
                           {c.label}
@@ -623,21 +623,11 @@ export default function LeaderboardScreen() {
           </>
         )}
 
-        {user && myData && <View style={{ height: 80 }} />}
-      </ScrollView>
-
-      {user && myData && (
-        <View
-          style={{
-            position: "absolute",
-            bottom: tabBarHeight,
-            left: 16,
-            right: 16,
-          }}
-        >
+        {user && myData && (
           <FadeInView
             duration={400}
             style={{
+              marginTop: 16,
               backgroundColor: rankingMode === "kings" ? "#EAB308" : "#00FF87",
               borderRadius: 14,
               paddingVertical: 10,
@@ -690,8 +680,8 @@ export default function LeaderboardScreen() {
               </Text>
             </View>
           </FadeInView>
-        </View>
-      )}
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
