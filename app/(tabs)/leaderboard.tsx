@@ -17,7 +17,7 @@ import { UserAvatar } from "@/src/components/UserAvatar";
 import { Trophy, Medal, Star, Crown, ChevronRight } from "lucide-react-native";
 import { getBadge } from "@/src/lib/types";
 
-type FilterType = "global" | "activity" | "gender" | "age" | "location";
+type FilterType = "global" | "activity" | "gender" | "age" | "location" | "gym";
 type RankingMode = "score" | "kings";
 
 const FILTER_LABELS: Record<FilterType, { fr: string; en: string }> = {
@@ -26,6 +26,7 @@ const FILTER_LABELS: Record<FilterType, { fr: string; en: string }> = {
   gender: { fr: "Genre", en: "Gender" },
   age: { fr: "Âge", en: "Age" },
   location: { fr: "Monde", en: "World" },
+  gym: { fr: "Ma Salle", en: "My Gym" },
 };
 
 const ACTIVITY_TRANSLATIONS: Record<string, { fr: string; en: string }> = {
@@ -91,6 +92,7 @@ interface LeaderboardUser {
   gender: string | null;
   age_bracket: string | null;
   country: string | null;
+  gym_name: string | null;
   total_score: number;
 }
 
@@ -199,6 +201,19 @@ export default function LeaderboardScreen() {
     },
   });
 
+  const { data: myGymName = null } = useQuery({
+    queryKey: ["my-gym-name", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.from("users").select("gym_name").eq("id", user.id).single();
+      return (data?.gym_name as string | null) || null;
+    },
+  });
+
+  const normalizeGym = (g: string | null) =>
+    (g || "").trim().toLowerCase();
+
   const getActivityLabel = (cat: string) => {
     if (ACTIVITY_TRANSLATIONS[cat])
       return lang === "fr" ? ACTIVITY_TRANSLATIONS[cat].fr : ACTIVITY_TRANSLATIONS[cat].en;
@@ -278,6 +293,7 @@ export default function LeaderboardScreen() {
           gender: userMap[uid]?.gender || null,
           age_bracket: userMap[uid]?.age_bracket || null,
           country: userMap[uid]?.country || null,
+          gym_name: userMap[uid]?.gym_name || null,
           total_score: rankingMode === "kings" ? userStats[uid].kings : userStats[uid].score,
         }))
         .filter((u) => u.total_score > 0)
@@ -304,6 +320,12 @@ export default function LeaderboardScreen() {
       const allowed = COUNTRIES_BY_CONTINENT[continentFilter]?.map((c) => c.value) || [];
       filtered = filtered.filter((u) => u.country && allowed.includes(u.country));
     }
+  }
+  if (filter === "gym") {
+    const target = normalizeGym(myGymName);
+    filtered = target
+      ? filtered.filter((u) => normalizeGym(u.gym_name) === target)
+      : [];
   }
 
   const top3 = filtered.slice(0, 3);
@@ -515,6 +537,17 @@ export default function LeaderboardScreen() {
                   </View>
                 </ScrollView>
               )}
+            </View>
+          )}
+
+          {filter === "gym" && (
+            <View className="bg-card/60 border border-border rounded-xl px-3 py-2 flex-row items-center">
+              <Text className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">
+                {lang === "fr" ? "Salle" : "Gym"}
+              </Text>
+              <Text className="text-foreground font-black text-xs flex-1" numberOfLines={1}>
+                {myGymName || (lang === "fr" ? "Non renseignée" : "Not set")}
+              </Text>
             </View>
           )}
         </View>

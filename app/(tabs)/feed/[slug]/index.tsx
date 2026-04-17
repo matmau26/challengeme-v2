@@ -16,8 +16,9 @@ import { useLocalSearchParams, router, Redirect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { FadeInView } from "@/src/components/ui/FadeInView";
-import { ChevronLeft, Play, Camera, X, AlertTriangle } from "lucide-react-native";
+import { ChevronLeft, Play, Camera, X, AlertTriangle, UserPlus } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
+import { UserSearch, type SearchedUser } from "@/src/components/UserSearch";
 import { useI18n } from "@/src/lib/i18n";
 import {
   getCategoryConfig,
@@ -59,6 +60,8 @@ export default function ChallengeDetailScreen() {
   const [uploading, setUploading] = useState(false);
   const [submittedThisSession, setSubmittedThisSession] = useState(false);
   const [filterGender, setFilterGender] = useState<"all" | "homme" | "femme">("all");
+  const [opponent, setOpponent] = useState<SearchedUser | null>(null);
+  const [showOpponentSearch, setShowOpponentSearch] = useState(false);
 
   const { data: challenge, isLoading: challengeLoading } = useQuery({
     queryKey: ["challenge-detail", id || slug],
@@ -282,9 +285,19 @@ export default function ChallengeDetailScreen() {
         badge_earned: estBadge,
         proof_url: proofUrl,
         proof_file_path: uploadedFilePath,
+        opponent_user_id: opponent?.id || null,
       });
 
       if (error) throw error;
+
+      if (opponent) {
+        await supabase.from("notifications").insert({
+          sender_id: user.id,
+          receiver_id: opponent.id,
+          challenge_id: challenge.id,
+          score_to_beat: Math.round(estScore),
+        });
+      }
 
       submittedChallenges.add(challenge.id);
       setSubmittedThisSession(true);
@@ -633,6 +646,56 @@ export default function ChallengeDetailScreen() {
               {formError && (
                 <Text className="text-xs text-red-500 font-bold mb-3">{formError}</Text>
               )}
+
+              {/* Défier un ami */}
+              <View className="border-t border-border pt-4 mb-4">
+                <Text className="text-sm font-bold text-foreground mb-2">
+                  {lang === "fr" ? "⚔️  Défier un ami" : "⚔️  Challenge a friend"}
+                </Text>
+                {opponent ? (
+                  <View className="flex-row items-center bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
+                    <UserAvatar
+                      avatarUrl={opponent.avatar_url}
+                      username={opponent.username}
+                      size="sm"
+                    />
+                    <View className="flex-1 ml-3">
+                      <Text className="text-foreground font-bold text-sm" numberOfLines={1}>
+                        {opponent.username}
+                      </Text>
+                      <Text className="text-[10px] text-primary font-black uppercase tracking-widest">
+                        {lang === "fr" ? "Adversaire sélectionné" : "Opponent selected"}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setOpponent(null)}
+                      hitSlop={10}
+                      className="w-7 h-7 rounded-full bg-muted items-center justify-center"
+                    >
+                      <X size={12} color="#888888" />
+                    </TouchableOpacity>
+                  </View>
+                ) : showOpponentSearch ? (
+                  <UserSearch
+                    onSelect={(u) => {
+                      setOpponent(u);
+                      setShowOpponentSearch(false);
+                    }}
+                    placeholder={lang === "fr" ? "Pseudo de ton adversaire…" : "Opponent username…"}
+                    ctaLabel={lang === "fr" ? "Défier" : "Challenge"}
+                  />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setShowOpponentSearch(true)}
+                    className="w-full py-3 rounded-lg border-2 border-dashed border-border bg-muted flex-row items-center justify-center gap-2"
+                  >
+                    <UserPlus size={16} color="#888888" />
+                    <Text className="text-xs font-bold text-muted-foreground">
+                      {lang === "fr" ? "Choisir un adversaire" : "Pick an opponent"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {/* Proof upload */}
               <View className="border-t border-border pt-4 mb-4">

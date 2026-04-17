@@ -17,7 +17,7 @@ import { getCategoryIcon } from "@/src/lib/categoryIcon";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { Plus, Trophy } from "lucide-react-native";
+import { Plus, Trophy, Dumbbell } from "lucide-react-native";
 
 function slugify(title?: string) {
   if (!title) return "challenge";
@@ -49,6 +49,7 @@ export default function FeedScreen() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [gymOnly, setGymOnly] = useState(false);
   const listRef = useRef<FlatList>(null);
 
   const handleCategoryChange = (cat: string) => {
@@ -121,6 +122,42 @@ export default function FeedScreen() {
     },
   });
 
+  const { data: myGymName = null } = useQuery({
+    queryKey: ["my-gym-name", user?.id],
+    enabled: !!user?.id,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.from("users").select("gym_name").eq("id", user.id).single();
+      return (data?.gym_name as string | null) || null;
+    },
+  });
+
+  const { data: gymAttemptCounts = {} } = useQuery({
+    queryKey: ["gym-attempt-counts", myGymName],
+    enabled: !!myGymName,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!myGymName) return {};
+      const { data: gymUsers, error: gErr } = await supabase.rpc("get_user_ids_by_gym", {
+        gym: myGymName,
+      });
+      if (gErr) return {};
+      const gymUserIds = (gymUsers || []).map((r: { id: string }) => r.id);
+      if (gymUserIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("attempts")
+        .select("challenge_id, user_id")
+        .in("user_id", gymUserIds);
+      if (error) return {};
+      const counts: Record<string, number> = {};
+      for (const a of data || []) {
+        if (a.challenge_id) counts[a.challenge_id] = (counts[a.challenge_id] || 0) + 1;
+      }
+      return counts;
+    },
+  });
+
   const categories = useMemo(() => {
     const safe = Array.isArray(challenges) ? challenges : [];
     const unique = [...new Set(safe.map((c: any) => c?.category).filter(Boolean) as string[])].sort();
@@ -128,7 +165,11 @@ export default function FeedScreen() {
   }, [challenges]);
 
   const safe = Array.isArray(challenges) ? challenges : [];
-  const filtered = activeCategory === "all" ? safe : safe.filter((c: any) => c?.category === activeCategory);
+  const activeCounts = gymOnly ? gymAttemptCounts : attemptCounts;
+  const filtered = (activeCategory === "all"
+    ? safe
+    : safe.filter((c: any) => c?.category === activeCategory)
+  ).filter((c: any) => (gymOnly ? (activeCounts[c?.id] || 0) > 0 : true));
 
   const renderItem = ({ item: challenge, index: i }: { item: any; index: number }) => {
     if (!challenge) return null;
@@ -139,7 +180,7 @@ export default function FeedScreen() {
     const slug = slugify(challenge.title);
     const emoji = getCategoryIcon(safeCategory);
     const isCompleted = completedChallengeIds.has(challenge.id);
-    const attemptCount = attemptCounts[challenge.id] || 0;
+    const attemptCount = activeCounts[challenge.id] || 0;
     const bestAttempt = userBestScores[challenge.id] as { score: number } | undefined;
 
     return (
@@ -237,6 +278,29 @@ export default function FeedScreen() {
       <View className="bg-background px-4 pb-2 pt-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
+            <TouchableOpacity
+              onPress={() => {
+                if (!myGymName) return;
+                setGymOnly((v) => !v);
+                listRef.current?.scrollToOffset({ offset: 0, animated: true });
+              }}
+              disabled={!myGymName}
+              className={`flex-row items-center justify-center gap-1.5 px-4 py-2 rounded-full border ${
+                gymOnly
+                  ? "bg-primary border-primary"
+                  : myGymName
+                    ? "bg-muted border-border"
+                    : "bg-muted border-border opacity-40"
+              }`}
+            >
+              <Dumbbell size={12} color={gymOnly ? "#000" : "#888888"} />
+              <Text
+                className={`text-xs font-bold ${gymOnly ? "text-black" : "text-muted-foreground"}`}
+                numberOfLines={1}
+              >
+                {lang === "fr" ? "Ma Salle" : "My Gym"}
+              </Text>
+            </TouchableOpacity>
             {categories.map((cat) => {
               const active = cat === activeCategory;
               let catLabel = cat;
