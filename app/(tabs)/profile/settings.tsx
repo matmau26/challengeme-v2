@@ -7,11 +7,12 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { FadeInView } from "@/src/components/ui/FadeInView";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ChevronDown, X } from "lucide-react-native";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useI18n } from "@/src/lib/i18n";
@@ -142,6 +143,8 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [usernameError, setUsernameError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"continent" | "country">("continent");
 
   useEffect(() => {
     if (!profile || hydrated) return;
@@ -208,6 +211,24 @@ export default function SettingsScreen() {
   };
 
   const countries = COUNTRIES_BY_CONTINENT[continent] || [];
+  const selectedContinent = CONTINENTS.find((c) => c.value === continent);
+  const selectedCountry = countries.find((c) => c.value === country);
+
+  const modalOptions = modalMode === "continent" ? CONTINENTS : countries;
+  const modalTitle =
+    modalMode === "continent"
+      ? lang === "fr" ? "Choisir un continent" : "Choose a continent"
+      : lang === "fr" ? "Choisir un pays" : "Choose a country";
+
+  const handleSelectOption = (value: string) => {
+    if (modalMode === "continent") {
+      setContinent(value);
+      setCountry("");
+    } else {
+      setCountry(value);
+    }
+    setIsModalOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -315,46 +336,41 @@ export default function SettingsScreen() {
           </FieldGroup>
 
           <FieldGroup label={lang === "fr" ? "Continent" : "Continent"}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row">
-                {CONTINENTS.map((c) => (
-                  <TouchableOpacity
-                    key={c.value}
-                    onPress={() => { setContinent(c.value); setCountry(""); }}
-                    className={`py-2 px-3 rounded-xl border mr-2 mb-2 ${
-                      continent === c.value ? "bg-primary/20 border-primary" : "bg-muted/30 border-transparent"
-                    }`}
-                  >
-                    <Text className={`text-xs font-bold ${continent === c.value ? "text-primary" : "text-muted-foreground"}`}>
-                      {lang === "fr" ? c.label_fr : c.label_en}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <TouchableOpacity
+              onPress={() => {
+                setModalMode("continent");
+                setIsModalOpen(true);
+              }}
+              className="bg-muted/50 border border-border rounded-xl p-4 flex-row justify-between items-center mb-4"
+              activeOpacity={0.7}
+            >
+              <Text className={`text-sm font-semibold ${selectedContinent ? "text-foreground" : "text-muted-foreground"}`}>
+                {selectedContinent
+                  ? lang === "fr" ? selectedContinent.label_fr : selectedContinent.label_en
+                  : lang === "fr" ? "Sélectionner..." : "Select..."}
+              </Text>
+              <ChevronDown size={18} color="#888888" />
+            </TouchableOpacity>
           </FieldGroup>
 
-          {countries.length > 0 && (
-            <FieldGroup label={lang === "fr" ? "Pays" : "Country"}>
-              <ScrollView style={{ maxHeight: 192 }} showsVerticalScrollIndicator={false}>
-                <View className="flex-row flex-wrap">
-                  {countries.map((c) => (
-                    <TouchableOpacity
-                      key={c.value}
-                      onPress={() => setCountry(c.value)}
-                      className={`py-2 px-3 rounded-xl border mr-2 mb-2 ${
-                        country === c.value ? "bg-primary/20 border-primary" : "bg-muted/30 border-transparent"
-                      }`}
-                    >
-                      <Text className={`text-xs font-bold ${country === c.value ? "text-primary" : "text-muted-foreground"}`}>
-                        {lang === "fr" ? c.label_fr : c.label_en}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </FieldGroup>
-          )}
+          <FieldGroup label={lang === "fr" ? "Pays" : "Country"}>
+            <TouchableOpacity
+              onPress={() => {
+                setModalMode("country");
+                setIsModalOpen(true);
+              }}
+              disabled={!continent}
+              className={`bg-muted/50 border border-border rounded-xl p-4 flex-row justify-between items-center mb-4 ${!continent ? "opacity-50" : ""}`}
+              activeOpacity={0.7}
+            >
+              <Text className={`text-sm font-semibold ${selectedCountry ? "text-foreground" : "text-muted-foreground"}`}>
+                {selectedCountry
+                  ? lang === "fr" ? selectedCountry.label_fr : selectedCountry.label_en
+                  : lang === "fr" ? "Sélectionner..." : "Select..."}
+              </Text>
+              <ChevronDown size={18} color="#888888" />
+            </TouchableOpacity>
+          </FieldGroup>
 
           <FieldGroup label={lang === "fr" ? "Unités de mesure" : "Unit System"}>
             <View className="flex-row">
@@ -445,6 +461,44 @@ export default function SettingsScreen() {
           </View>
         </FadeInView>
       </ScrollView>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+      >
+        <View className="bg-black/80 flex-1 justify-end">
+          <TouchableOpacity className="flex-1" activeOpacity={1} onPress={() => setIsModalOpen(false)} />
+          <View className="bg-card rounded-t-3xl max-h-[70%]">
+            <View className="flex-row justify-between items-center px-6 py-4 border-b border-border/50">
+              <Text className="text-base font-black text-foreground">{modalTitle}</Text>
+              <TouchableOpacity onPress={() => setIsModalOpen(false)} hitSlop={10}>
+                <X size={20} color="#888888" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {modalOptions.map((opt) => {
+                const isSelected =
+                  modalMode === "continent" ? opt.value === continent : opt.value === country;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => handleSelectOption(opt.value)}
+                    className="py-4 px-6 border-b border-border/50"
+                    activeOpacity={0.7}
+                  >
+                    <Text className={`text-sm ${isSelected ? "text-primary font-black" : "text-foreground"}`}>
+                      {lang === "fr" ? opt.label_fr : opt.label_en}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <View className="h-8" />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
