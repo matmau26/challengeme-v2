@@ -44,7 +44,8 @@ export default function SubmitScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rules, setRules] = useState("");
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<Category | "other" | null>(null);
+  const [customCategory, setCustomCategory] = useState("");
   const [metric, setMetric] = useState<MetricType | null>(null);
   const [difficulty, setDifficulty] = useState(3);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,15 @@ export default function SubmitScreen() {
       setError(lang === "fr" ? "Choisis une catégorie." : "Pick a category.");
       return;
     }
+    const trimmedCustomCategory = customCategory.trim();
+    if (category === "other" && !trimmedCustomCategory) {
+      setError(
+        lang === "fr"
+          ? "Précise le nom de ton activité."
+          : "Enter your custom activity name.",
+      );
+      return;
+    }
     if (!metric) {
       setError(
         lang === "fr"
@@ -73,15 +83,17 @@ export default function SubmitScreen() {
     }
 
     const metricConfig = METRIC_OPTIONS.find((m) => m.value === metric)!;
+    const resolvedCategory =
+      category === "other" ? trimmedCustomCategory.toLowerCase() : category;
     setIsSubmitting(true);
 
     try {
       const payload: Record<string, unknown> = {
         title: trimmedTitle,
-        category,
+        category: resolvedCategory,
         metric_type: metric,
         unit: metricConfig.defaultUnit,
-        difficulty,
+        difficulty: Number(difficulty),
       };
       const trimmedDescription = description.trim();
       const trimmedRules = rules.trim();
@@ -98,6 +110,7 @@ export default function SubmitScreen() {
         .insert(payload);
 
       if (insertError) {
+        console.error("[SUPABASE INSERT ERROR]:", insertError);
         setError(
           lang === "fr"
             ? "Impossible de créer le défi. Réessaie."
@@ -108,7 +121,8 @@ export default function SubmitScreen() {
       }
 
       router.replace("/(tabs)/feed/");
-    } catch {
+    } catch (error) {
+      console.error("[SUPABASE INSERT ERROR]:", error);
       setError(
         lang === "fr"
           ? "Une erreur inattendue est survenue."
@@ -230,8 +244,46 @@ export default function SubmitScreen() {
                       </TouchableOpacity>
                     );
                   })}
+                  {(() => {
+                    const active = category === "other";
+                    return (
+                      <TouchableOpacity
+                        key="other"
+                        onPress={() => setCategory("other")}
+                        activeOpacity={0.8}
+                        style={{
+                          borderColor: active ? "#FFFFFF" : "#2A2A2A",
+                          backgroundColor: active
+                            ? "rgba(255,255,255,0.12)"
+                            : "rgba(42,42,42,0.5)",
+                        }}
+                        className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border"
+                      >
+                        <Text style={{ fontSize: 14 }}>✨</Text>
+                        <Text
+                          style={{ color: active ? "#FFFFFF" : "#888888" }}
+                          className="text-xs font-black uppercase tracking-wider"
+                        >
+                          {lang === "fr" ? "Autre" : "Other"}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
                 </View>
               </ScrollView>
+              {category === "other" && (
+                <TextInput
+                  value={customCategory}
+                  onChangeText={(v) => setCustomCategory(v.slice(0, 40))}
+                  placeholder={
+                    lang === "fr"
+                      ? "Nom de ton activité (ex: Escalade)"
+                      : "Your activity name (e.g., Climbing)"
+                  }
+                  placeholderTextColor="#666666"
+                  className="bg-muted/50 border border-border rounded-xl p-4 mt-3 text-foreground"
+                />
+              )}
             </View>
 
             {/* Metric type */}
@@ -330,19 +382,19 @@ export default function SubmitScreen() {
             )}
 
             {/* Submit */}
-            <View className="flex-col items-center justify-center w-full mt-2">
+            <View className="items-center w-full mt-2">
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={isSubmitting}
                 activeOpacity={0.85}
-                className={`w-full py-5 rounded-2xl bg-primary flex-row items-center justify-center gap-2 ${
+                className={`self-center px-8 py-3.5 rounded-full bg-primary flex-row items-center justify-center gap-2 ${
                   isSubmitting ? "opacity-60" : ""
                 }`}
               >
                 {isSubmitting ? (
                   <ActivityIndicator color="#000" />
                 ) : null}
-                <Text className="text-black font-black text-base uppercase tracking-widest">
+                <Text className="text-black font-black text-sm uppercase tracking-widest">
                   {isSubmitting
                     ? lang === "fr"
                       ? "ENVOI..."
