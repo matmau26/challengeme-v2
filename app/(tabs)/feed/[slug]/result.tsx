@@ -343,7 +343,7 @@ export default function ResultScreen() {
             <Text className="text-black font-black text-base uppercase tracking-wide">
               {isSharing
                 ? lang === "fr" ? "G\u00e9n\u00e9ration..." : "Generating..."
-                : lang === "fr" ? "Partage ton exploit" : "Share your performance"}
+                : lang === "fr" ? "Partager ma performance" : "Share my performance"}
             </Text>
           </TouchableOpacity>
 
