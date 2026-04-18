@@ -103,7 +103,7 @@ export default function SubmitScreen() {
           : `${lang === "fr" ? "Règles du jeu" : "Rules"}:\n${trimmedRules}`
         : trimmedDescription;
       if (combinedDescription) payload.description = combinedDescription;
-      if (user?.id) payload.created_by = user.id;
+      if (user?.id) payload.user_id = user.id;
 
       const { error: insertError } = await supabase
         .from("challenges")
