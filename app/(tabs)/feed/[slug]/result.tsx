@@ -347,7 +347,7 @@ export default function ResultScreen() {
             </Text>
           </TouchableOpacity>
 
-          <View className="flex-row gap-3">
+          <View className="flex-row w-full justify-between gap-2">
             {[
               {
                 icon: <RefreshCcw size={14} color="#888888" />,
@@ -368,10 +368,14 @@ export default function ResultScreen() {
               <TouchableOpacity
                 key={i}
                 onPress={btn.onPress}
-                className="flex-1 py-3 px-4 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-2"
+                className="flex-1 py-3 px-2 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-2"
               >
                 {btn.icon}
-                <Text className="text-muted-foreground font-bold text-[10px] uppercase">
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  className="text-muted-foreground font-bold text-[10px] uppercase"
+                >
                   {btn.label}
                 </Text>
               </TouchableOpacity>
