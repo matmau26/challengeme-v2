@@ -43,6 +43,7 @@ export default function SubmitScreen() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [rules, setRules] = useState("");
   const [category, setCategory] = useState<Category | null>(null);
   const [metric, setMetric] = useState<MetricType | null>(null);
   const [difficulty, setDifficulty] = useState(3);
@@ -82,7 +83,14 @@ export default function SubmitScreen() {
         unit: metricConfig.defaultUnit,
         difficulty,
       };
-      if (description.trim()) payload.description = description.trim();
+      const trimmedDescription = description.trim();
+      const trimmedRules = rules.trim();
+      const combinedDescription = trimmedRules
+        ? trimmedDescription
+          ? `${trimmedDescription}\n\n${lang === "fr" ? "Règles du jeu" : "Rules"}:\n${trimmedRules}`
+          : `${lang === "fr" ? "Règles du jeu" : "Rules"}:\n${trimmedRules}`
+        : trimmedDescription;
+      if (combinedDescription) payload.description = combinedDescription;
       if (user?.id) payload.created_by = user.id;
 
       const { error: insertError } = await supabase
@@ -170,14 +178,14 @@ export default function SubmitScreen() {
                 onChangeText={(v) => setDescription(v.slice(0, 280))}
                 placeholder={
                   lang === "fr"
-                    ? "Règles, format, astuces..."
-                    : "Rules, format, tips..."
+                    ? "Format, astuces, contexte..."
+                    : "Format, tips, context..."
                 }
                 placeholderTextColor="#666666"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm text-foreground min-h-[96px]"
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-5 text-sm text-foreground min-h-[110px]"
               />
               <Text className="text-[10px] text-muted-foreground mt-1 text-right">
                 {description.length}/280
@@ -258,12 +266,38 @@ export default function SubmitScreen() {
               </View>
             </View>
 
+            {/* Challenge Rules */}
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                {lang === "fr"
+                  ? "Règles du jeu (Optionnel)"
+                  : "Game Rules (Optional)"}
+              </Text>
+              <TextInput
+                value={rules}
+                onChangeText={(v) => setRules(v.slice(0, 400))}
+                placeholder={
+                  lang === "fr"
+                    ? "Ex: Pas de pause > 10s, amplitude complète, pieds joints..."
+                    : "E.g., no break > 10s, full range of motion, feet together..."
+                }
+                placeholderTextColor="#666666"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                className="text-foreground bg-muted/50 p-4 rounded-xl border border-border mt-2 min-h-[120px] text-sm"
+              />
+              <Text className="text-[10px] text-muted-foreground mt-1 text-right">
+                {rules.length}/400
+              </Text>
+            </View>
+
             {/* Difficulty */}
             <View>
               <Text className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
                 {lang === "fr" ? "Difficulté" : "Difficulty"}
               </Text>
-              <View className="flex-row items-center gap-2 bg-muted/50 border border-border rounded-xl px-4 py-3">
+              <View className="flex-row items-center gap-2 bg-muted/50 border border-border rounded-xl px-4 py-5">
                 {[1, 2, 3, 4, 5].map((lvl) => {
                   const active = lvl <= difficulty;
                   return (
@@ -296,27 +330,29 @@ export default function SubmitScreen() {
             )}
 
             {/* Submit */}
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-              activeOpacity={0.85}
-              className={`w-full py-4 rounded-2xl bg-primary flex-row items-center justify-center gap-2 mt-2 ${
-                isSubmitting ? "opacity-60" : ""
-              }`}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#000" />
-              ) : null}
-              <Text className="text-black font-black text-base uppercase tracking-widest">
-                {isSubmitting
-                  ? lang === "fr"
-                    ? "Envoi..."
-                    : "Submitting..."
-                  : lang === "fr"
-                    ? "Créer le défi"
-                    : "Create Challenge"}
-              </Text>
-            </TouchableOpacity>
+            <View className="flex-col items-center justify-center w-full mt-2">
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                activeOpacity={0.85}
+                className={`w-full py-5 rounded-2xl bg-primary flex-row items-center justify-center gap-2 ${
+                  isSubmitting ? "opacity-60" : ""
+                }`}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#000" />
+                ) : null}
+                <Text className="text-black font-black text-base uppercase tracking-widest">
+                  {isSubmitting
+                    ? lang === "fr"
+                      ? "ENVOI..."
+                      : "SUBMITTING..."
+                    : lang === "fr"
+                      ? "CRÉER LE DÉFI"
+                      : "CREATE CHALLENGE"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </FadeInView>
         </ScrollView>
       </KeyboardAvoidingView>
