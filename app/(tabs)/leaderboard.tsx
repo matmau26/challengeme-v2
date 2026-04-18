@@ -122,14 +122,14 @@ function PodiumStep({
           flex: 1,
           width: "100%",
           alignItems: "center",
-          justifyContent: "center",
-          paddingBottom: 4,
+          justifyContent: "flex-end",
+          paddingBottom: 12,
         }}
       >
         <View style={{ height: 32, justifyContent: "flex-end", marginBottom: 8 }}>
           {icon}
         </View>
-        <View style={{ position: "relative", marginBottom: 14 }}>
+        <View style={{ position: "relative", marginBottom: 10 }}>
           <UserAvatar
             avatarUrl={user.avatar_url}
             username={user.username}
@@ -154,9 +154,9 @@ function PodiumStep({
             <Text style={{ fontSize: 10, fontWeight: "900", color }}>{rank}</Text>
           </View>
         </View>
-        <View className="flex-col items-center gap-1" style={{ paddingHorizontal: 4 }}>
+        <View className="flex-col items-center" style={{ paddingHorizontal: 4 }}>
           <Text
-            style={{ fontSize: 10, fontWeight: "900", color: "#FFFFFF" }}
+            style={{ fontSize: 10, fontWeight: "900", color: "#FFFFFF", lineHeight: 12 }}
             numberOfLines={1}
           >
             {user.username}
@@ -165,6 +165,8 @@ function PodiumStep({
             style={{
               fontSize: 12,
               fontWeight: "900",
+              lineHeight: 14,
+              marginTop: 2,
               color: rankingMode === "kings" ? "#EAB308" : color,
             }}
           >
@@ -408,7 +410,7 @@ export default function LeaderboardScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
-          <View className="flex-row pb-2">
+          <View className="flex-row py-3">
             {(Object.keys(FILTER_LABELS) as FilterType[]).map((f) => (
               <TouchableOpacity
                 key={f}
@@ -429,7 +431,7 @@ export default function LeaderboardScreen() {
           </View>
         </ScrollView>
 
-        <View className="mt-4" style={{ minHeight: 48, marginBottom: 16 }}>
+        <View className="mt-2 py-2.5" style={{ minHeight: 48, marginBottom: 16 }}>
           {filter === "activity" && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row">

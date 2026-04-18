@@ -1,16 +1,17 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
-import { captureRef } from "react-native-view-shot";
-import * as Sharing from "expo-sharing";
+// import { captureRef } from "react-native-view-shot"; // Disabled on Expo Go (missing native module RNViewShot)
+// import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import {
   Trophy, Share2, RefreshCcw, Home, Crown, Flame, ThumbsUp, Sprout, ListOrdered,
@@ -18,21 +19,16 @@ import {
 import { useI18n } from "@/src/lib/i18n";
 import {
   BADGE_CONFIG,
-  getCategoryConfig,
   getBadge,
   formatValue,
   computeScore,
   type MetricType,
-  type Category,
 } from "@/src/lib/types";
-import { getCategoryIcon } from "@/src/lib/categoryIcon";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
-import { useAuth } from "@/src/contexts/AuthContext";
-import { useUserProfile } from "@/src/hooks/useUserProfile";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
-import { ShareCard } from "@/src/components/ShareCard";
+// import { ShareCard } from "@/src/components/ShareCard"; // Disabled on Expo Go
 
 const renderBadgeIcon = (badge: string, color: string) => {
   const props = { size: 52, strokeWidth: 1.5, color };
@@ -53,7 +49,7 @@ const getBadgeMotivation = (badge: string, lang: string): string => {
   return lang === "fr" ? "Premier essai. Continue, tout le monde commence quelque part." : "First try. Keep going, everyone starts somewhere.";
 };
 
-export default function ResultScreen() {
+export default function Result() {
   const { slug, id, value, metric, unit } = useLocalSearchParams<{
     slug: string;
     id: string;
@@ -67,11 +63,6 @@ export default function ResultScreen() {
   const { lang } = useI18n();
   const { unitSystem } = useUnitSystem();
   const tabBarHeight = useBottomTabBarHeight();
-  const { user } = useAuth();
-  const { data: profile } = useUserProfile();
-  const shareRef = useRef<View>(null);
-  const [isSharing, setIsSharing] = useState(false);
-
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
 
@@ -137,7 +128,6 @@ export default function ResultScreen() {
     rookie: "#9CA3AF",
   }[badge] || "#00FF87";
 
-  const category = challenge?.category as Category;
   const title = challenge
     ? formatTextUnits(
         lang === "en" && challenge.title_en ? challenge.title_en : challenge.title,
@@ -146,26 +136,12 @@ export default function ResultScreen() {
     : "";
 
   const handleShare = async () => {
-    if (isSharing) return;
-    setIsSharing(true);
-    try {
-      const uri = await captureRef(shareRef, {
-        format: "png",
-        quality: 1,
-        result: "tmpfile",
-      });
-      const available = await Sharing.isAvailableAsync();
-      if (available) {
-        await Sharing.shareAsync(uri, {
-          mimeType: "image/png",
-          dialogTitle: lang === "fr" ? "Partager ton exploit" : "Share your performance",
-        });
-      }
-    } catch {
-      // User cancelled or capture failed
-    } finally {
-      setIsSharing(false);
-    }
+    // Native share disabled in Expo Go (RNViewShot native module unavailable).
+    console.log("Partage natif désactivé sur Expo Go");
+    Alert.alert(
+      lang === "fr" ? "Partage" : "Share",
+      lang === "fr" ? "Bientôt disponible" : "Coming soon",
+    );
   };
 
   if (challengeLoading || !challenge) {
@@ -179,27 +155,9 @@ export default function ResultScreen() {
     );
   }
 
-  const username = profile?.username || user?.email?.split("@")[0] || "Athlete";
-
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View
-        style={{ position: "absolute", left: -9999, top: 0 }}
-        pointerEvents="none"
-      >
-        <View collapsable={false}>
-          <ShareCard
-            ref={shareRef}
-            title={title}
-            badge={badge}
-            score={score}
-            username={username}
-            lang={lang}
-            performance={displayValue}
-            rank={rank}
-          />
-        </View>
-      </View>
+      {/* Hidden ShareCard capture disabled on Expo Go (RNViewShot native module unavailable). */}
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
@@ -323,7 +281,6 @@ export default function ResultScreen() {
         <FadeInView duration={400} delay={500} className="gap-3 mx-2">
           <TouchableOpacity
             onPress={handleShare}
-            disabled={isSharing}
             activeOpacity={0.85}
             className="w-full py-5 rounded-2xl bg-orange-500 flex-row items-center justify-center gap-2"
             style={{
@@ -332,18 +289,11 @@ export default function ResultScreen() {
               shadowRadius: 12,
               shadowOffset: { width: 0, height: 6 },
               elevation: 6,
-              opacity: isSharing ? 0.6 : 1,
             }}
           >
-            {isSharing ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <Share2 size={20} color="#000" />
-            )}
+            <Share2 size={20} color="#000" />
             <Text className="text-black font-black text-base uppercase tracking-wide">
-              {isSharing
-                ? lang === "fr" ? "G\u00e9n\u00e9ration..." : "Generating..."
-                : lang === "fr" ? "Partager ma performance" : "Share my performance"}
+              {lang === "fr" ? "Partager ma performance" : "Share my performance"}
             </Text>
           </TouchableOpacity>
 
