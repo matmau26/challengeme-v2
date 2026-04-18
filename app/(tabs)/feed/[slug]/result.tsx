@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
-// import { captureRef } from "react-native-view-shot";
+import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import {
@@ -146,27 +146,26 @@ export default function ResultScreen() {
     : "";
 
   const handleShare = async () => {
-    console.log("G\u00e9n\u00e9ration de carte d\u00e9sactiv\u00e9e sur Expo Go");
-    // if (isSharing) return;
-    // setIsSharing(true);
-    // try {
-    //   const uri = await captureRef(shareRef, {
-    //     format: "png",
-    //     quality: 1,
-    //     result: "tmpfile",
-    //   });
-    //   const available = await Sharing.isAvailableAsync();
-    //   if (available) {
-    //     await Sharing.shareAsync(uri, {
-    //       mimeType: "image/png",
-    //       dialogTitle: lang === "fr" ? "Partager ton exploit" : "Share your performance",
-    //     });
-    //   }
-    // } catch {
-    //   // User cancelled or capture failed
-    // } finally {
-    //   setIsSharing(false);
-    // }
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      const uri = await captureRef(shareRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      const available = await Sharing.isAvailableAsync();
+      if (available) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "image/png",
+          dialogTitle: lang === "fr" ? "Partager ton exploit" : "Share your performance",
+        });
+      }
+    } catch {
+      // User cancelled or capture failed
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   if (challengeLoading || !challenge) {
@@ -184,7 +183,7 @@ export default function ResultScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* <View
+      <View
         style={{ position: "absolute", left: -9999, top: 0 }}
         pointerEvents="none"
       >
@@ -200,7 +199,7 @@ export default function ResultScreen() {
             rank={rank}
           />
         </View>
-      </View> */}
+      </View>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{

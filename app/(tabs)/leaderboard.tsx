@@ -116,52 +116,61 @@ function PodiumStep({
   rankingMode: RankingMode;
 }) {
   return (
-    <View style={{ alignItems: "center", flex: 1 }}>
-      <View style={{ height: 32, justifyContent: "flex-end", marginBottom: 6 }}>
-        {icon}
-      </View>
-      <View style={{ position: "relative", marginBottom: 12 }}>
-        <UserAvatar
-          avatarUrl={user.avatar_url}
-          username={user.username}
-          gender={user.gender}
-          size={isFirst ? "lg" : "md"}
-        />
-        <View
-          style={{
-            position: "absolute",
-            bottom: -8,
-            right: -8,
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            backgroundColor: bgColor,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1.5,
-            borderColor: color,
-          }}
-        >
-          <Text style={{ fontSize: 10, fontWeight: "900", color }}>{rank}</Text>
+    <View style={{ alignItems: "center", flex: 1, height: 280 }}>
+      <View
+        style={{
+          flex: 1,
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingBottom: 4,
+        }}
+      >
+        <View style={{ height: 32, justifyContent: "flex-end", marginBottom: 8 }}>
+          {icon}
         </View>
-      </View>
-      <View style={{ alignItems: "center", paddingHorizontal: 4, marginBottom: 8 }}>
-        <Text
-          style={{ fontSize: 10, fontWeight: "900", color: "#FFFFFF" }}
-          numberOfLines={1}
-        >
-          {user.username}
-        </Text>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "900",
-            color: rankingMode === "kings" ? "#EAB308" : color,
-            marginTop: 2,
-          }}
-        >
-          {user.total_score.toLocaleString()}{rankingMode === "kings" ? " 👑" : ""}
-        </Text>
+        <View style={{ position: "relative", marginBottom: 14 }}>
+          <UserAvatar
+            avatarUrl={user.avatar_url}
+            username={user.username}
+            gender={user.gender}
+            size={isFirst ? "lg" : "md"}
+          />
+          <View
+            style={{
+              position: "absolute",
+              bottom: -8,
+              right: -8,
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              backgroundColor: bgColor,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1.5,
+              borderColor: color,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: "900", color }}>{rank}</Text>
+          </View>
+        </View>
+        <View className="flex-col items-center gap-1" style={{ paddingHorizontal: 4 }}>
+          <Text
+            style={{ fontSize: 10, fontWeight: "900", color: "#FFFFFF" }}
+            numberOfLines={1}
+          >
+            {user.username}
+          </Text>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "900",
+              color: rankingMode === "kings" ? "#EAB308" : color,
+            }}
+          >
+            {user.total_score.toLocaleString()}{rankingMode === "kings" ? " 👑" : ""}
+          </Text>
+        </View>
       </View>
       <View
         style={{
@@ -354,7 +363,7 @@ export default function LeaderboardScreen() {
   console.log("[LOG] données Supabase :", leaderboardData);
 
   const filterBtnClass = (active: boolean) =>
-    `px-4 py-1.5 rounded-full items-center justify-center mr-2 ${
+    `px-4 py-2.5 rounded-full items-center justify-center mr-2 ${
       active ? "bg-primary/15" : "bg-muted/30"
     }`;
 
@@ -404,7 +413,7 @@ export default function LeaderboardScreen() {
               <TouchableOpacity
                 key={f}
                 onPress={() => resetFilters(f)}
-                className={`px-4 py-1.5 rounded-full items-center justify-center mr-2 ${
+                className={`px-4 py-2.5 rounded-full items-center justify-center mr-2 ${
                   filter === f ? "bg-foreground" : "bg-muted/50"
                 }`}
               >
@@ -630,7 +639,7 @@ export default function LeaderboardScreen() {
                   key={u.user_id}
                   duration={400}
                   delay={i * 40}
-                  className={`flex-row items-center bg-card/40 rounded-2xl px-4 py-3 border mb-2 ${
+                  className={`flex-row items-center bg-card/40 rounded-2xl px-4 py-5 border mb-2 ${
                     u.user_id === user?.id ? "border-primary/50 bg-primary/10" : "border-border"
                   }`}
                 >
