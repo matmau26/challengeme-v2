@@ -18,6 +18,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { Plus, Trophy, Dumbbell } from "lucide-react-native";
+import { UserAvatar } from "@/src/components/UserAvatar";
+
+interface PendingDuel {
+  id: string;
+  score_to_beat: number | null;
+  sender: { username: string | null; avatar_url: string | null } | null;
+  challenge: { id: string; title: string; category: string | null } | null;
+}
 
 function slugify(title?: string) {
   if (!title) return "challenge";
@@ -119,6 +127,26 @@ export default function FeedScreen() {
         if (a.challenge_id) counts[a.challenge_id] = (counts[a.challenge_id] || 0) + 1;
       }
       return counts;
+    },
+  });
+
+  const { data: pendingDuels = [] } = useQuery<PendingDuel[]>({
+    queryKey: ["pending-duels", user?.id],
+    enabled: !!user?.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("notifications")
+        .select(
+          "id, score_to_beat, sender:sender_id(username, avatar_url), challenge:challenge_id(id, title, category)",
+        )
+        .eq("receiver_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return ((data || []) as unknown as PendingDuel[]).filter(
+        (d) => d.challenge && d.sender,
+      );
     },
   });
 
@@ -275,6 +303,69 @@ export default function FeedScreen() {
           <Text className="text-foreground"> ⚡</Text>
         </Text>
       </View>
+
+      {/* Pending duels */}
+      {pendingDuels.length > 0 && (
+        <View className="pt-2 pb-1">
+          <Text className="px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            {lang === "fr" ? "⚔️ Défis reçus" : "⚔️ Incoming duels"}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+          >
+            {pendingDuels.map((duel) => {
+              const senderName = duel.sender?.username || "Athlete";
+              const challengeTitle = duel.challenge?.title || "Challenge";
+              return (
+                <TouchableOpacity
+                  key={duel.id}
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/feed/[slug]",
+                      params: {
+                        slug: slugify(challengeTitle),
+                        id: duel.challenge?.id ?? "",
+                        duel_id: duel.id,
+                        score_to_beat: String(duel.score_to_beat ?? ""),
+                      },
+                    })
+                  }
+                  className="w-72 bg-card border border-orange-500/50 rounded-2xl p-4"
+                >
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <UserAvatar
+                      avatarUrl={duel.sender?.avatar_url ?? null}
+                      username={senderName}
+                      size="sm"
+                    />
+                    <Text
+                      className="text-orange-500 font-black flex-1"
+                      numberOfLines={1}
+                    >
+                      ⚔️ {senderName} {lang === "fr" ? "te défie !" : "challenges you!"}
+                    </Text>
+                  </View>
+                  <Text
+                    className="text-foreground font-bold text-sm mb-1"
+                    numberOfLines={2}
+                  >
+                    {challengeTitle}
+                  </Text>
+                  <Text className="text-muted-foreground text-xs">
+                    {lang === "fr" ? "Objectif à battre : " : "Score to beat: "}
+                    <Text className="text-orange-500 font-black">
+                      {duel.score_to_beat ?? "?"}
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Category filter bar */}
       <View className="bg-background px-4 pb-2 pt-4">
