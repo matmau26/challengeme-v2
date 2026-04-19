@@ -33,7 +33,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L'application accède à vos photos pour importer une preuve.",
+          "cameraPermission": "L'application accède à l'appareil photo pour filmer ou photographier une preuve.",
+          "microphonePermission": "L'application accède au micro pour enregistrer l'audio des vidéos."
+        }
+      ]
     ],
     "extra": {
       "router": {},

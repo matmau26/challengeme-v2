@@ -140,7 +140,37 @@ export default function ChallengeDetailScreen() {
     enabled: attemptUserIds.length > 0,
   });
 
-  const handlePickProof = async () => {
+  const handleAsset = (result: ImagePicker.ImagePickerResult) => {
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    if (asset.fileSize && asset.fileSize > 100 * 1024 * 1024) {
+      Alert.alert(lang === "fr" ? "Fichier trop lourd (Max 100 Mo)" : "File too large (Max 100MB)");
+      return;
+    }
+    setProofUri(asset.uri);
+    setProofIsVideo(asset.type === "video");
+  };
+
+  const pickFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        lang === "fr" ? "Permission requise" : "Permission required",
+        lang === "fr"
+          ? "Active l'acc\u00e8s \u00e0 l'appareil photo dans les r\u00e9glages."
+          : "Enable camera access in settings.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images", "videos"],
+      allowsEditing: false,
+      quality: 0.8,
+    });
+    handleAsset(result);
+  };
+
+  const pickFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -156,15 +186,25 @@ export default function ChallengeDetailScreen() {
       allowsEditing: false,
       quality: 0.8,
     });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > 100 * 1024 * 1024) {
-        Alert.alert(lang === "fr" ? "Fichier trop lourd (Max 100 Mo)" : "File too large (Max 100MB)");
-        return;
-      }
-      setProofUri(asset.uri);
-      setProofIsVideo(asset.type === "video");
-    }
+    handleAsset(result);
+  };
+
+  const handlePickProof = () => {
+    Alert.alert(
+      lang === "fr" ? "Ajouter une preuve" : "Add proof",
+      lang === "fr" ? "Choisis une source" : "Choose a source",
+      [
+        {
+          text: lang === "fr" ? "Appareil photo" : "Camera",
+          onPress: pickFromCamera,
+        },
+        {
+          text: lang === "fr" ? "Galerie" : "Library",
+          onPress: pickFromLibrary,
+        },
+        { text: lang === "fr" ? "Annuler" : "Cancel", style: "cancel" },
+      ],
+    );
   };
 
   const getEstimatedScore = (): number | null => {
