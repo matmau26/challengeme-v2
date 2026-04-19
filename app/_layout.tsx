@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Stack, useSegments, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,25 +18,17 @@ function NavigationGuard() {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const hasNavigated = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
-    if (hasNavigated.current) return;
 
     const inPublicGroup = segments[0] === "(public)";
     const inTabsGroup = segments[0] === "(tabs)";
 
     if (session && !inTabsGroup) {
-      hasNavigated.current = true;
-      setTimeout(() => {
-        router.replace({ pathname: "/(tabs)/feed/" });
-      }, 0);
+      router.replace({ pathname: "/(tabs)/feed/" });
     } else if (!session && !inPublicGroup) {
-      hasNavigated.current = true;
-      setTimeout(() => {
-        router.replace({ pathname: "/(public)/landing/" });
-      }, 0);
+      router.replace({ pathname: "/(public)/landing/" });
     }
   }, [session, isLoading, segments]);
 

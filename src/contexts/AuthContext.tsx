@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import { supabase } from "@/src/lib/supabase";
@@ -19,23 +19,23 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialised = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!initialised.current) {
-        initialised.current = true;
-        setSession(session);
-        setIsLoading(false);
-      }
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!initialised.current) return;
+      console.log("[AUTH] Changement d'état détecté :", _event);
       setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -56,13 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (params.access_token && params.refresh_token) {
         console.log("[AUTH] Token intercepté depuis l'URL ! Configuration de la session...");
-        const { error } = await supabase.auth.setSession({
+        const { data, error } = await supabase.auth.setSession({
           access_token: params.access_token,
           refresh_token: params.refresh_token,
         });
 
         if (error) {
           console.error("[AUTH] Erreur d'injection du token:", error.message);
+        } else if (data.session) {
+          console.log("[AUTH] Session établie via Deep Link ! Mise à jour de l'état React...");
+          setSession(data.session);
+          setUser(data.session.user);
+          setIsLoading(false);
         }
       }
     };
@@ -83,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, isLoading, signOut }}>
+    <AuthContext.Provider value={{ session, user, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
