@@ -155,6 +155,11 @@ export default function Result() {
     );
   }
 
+  const goToTab = (href: "/(tabs)/leaderboard" | "/(tabs)/feed") => {
+    if (router.canDismiss()) router.dismissAll();
+    router.navigate(href);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* Hidden ShareCard capture disabled on Expo Go (RNViewShot native module unavailable). */}
@@ -165,9 +170,11 @@ export default function Result() {
           paddingBottom: tabBarHeight + 24,
           flexGrow: 1,
           justifyContent: "center",
+          alignItems: "center",
         }}
         showsVerticalScrollIndicator={false}
       >
+       <View className="w-full max-w-md items-stretch">
         {/* Challenge header */}
         <FadeInView duration={400} className="items-center mb-4">
           <View className="px-3 py-0.5 rounded-full bg-muted/50 border border-border mb-2">
@@ -241,7 +248,7 @@ export default function Result() {
         </FadeInView>
 
         {/* Stats */}
-        <FadeInView duration={400} delay={300} className="flex-row gap-2 mb-4 mx-2">
+        <FadeInView duration={400} delay={300} className="flex-row gap-2 mb-4">
           {[
             { label: "Performance", value: displayValue },
             { label: lang === "fr" ? "Rang Mondial" : "World Rank", value: `#${rank}` },
@@ -278,7 +285,7 @@ export default function Result() {
         </FadeInView>
 
         {/* Action buttons */}
-        <FadeInView duration={400} delay={500} className="gap-3 mx-2">
+        <FadeInView duration={400} delay={500} className="gap-3">
           <TouchableOpacity
             onPress={handleShare}
             activeOpacity={0.85}
@@ -302,21 +309,20 @@ export default function Result() {
               {
                 icon: <RefreshCcw size={14} color="#888888" />,
                 label: lang === "fr" ? "R\u00e9essayer" : "Try again",
-                onPress: () =>
-                  router.replace({
-                    pathname: "/(tabs)/feed/[slug]",
-                    params: { slug: slug || "", id: id || "" },
-                  }),
+                onPress: () => {
+                  if (router.canDismiss()) router.dismiss();
+                  else router.back();
+                },
               },
               {
                 icon: <ListOrdered size={14} color="#888888" />,
                 label: lang === "fr" ? "Classement" : "Leaderboard",
-                onPress: () => router.navigate("/(tabs)/leaderboard"),
+                onPress: () => goToTab("/(tabs)/leaderboard"),
               },
               {
                 icon: <Home size={14} color="#888888" />,
                 label: lang === "fr" ? "Accueil" : "Home",
-                onPress: () => router.replace({ pathname: "/(tabs)/feed/" }),
+                onPress: () => goToTab("/(tabs)/feed"),
               },
             ].map((btn, i) => (
               <TouchableOpacity
@@ -336,6 +342,7 @@ export default function Result() {
             ))}
           </View>
         </FadeInView>
+       </View>
       </ScrollView>
     </SafeAreaView>
   );

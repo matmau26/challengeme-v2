@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams, router, Redirect } from "expo-router";
+import { useLocalSearchParams, router, Redirect, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { FadeInView } from "@/src/components/ui/FadeInView";
@@ -63,10 +63,12 @@ export default function ChallengeDetailScreen() {
   const [opponent, setOpponent] = useState<SearchedUser | null>(null);
   const [showOpponentSearch, setShowOpponentSearch] = useState(false);
 
-  useEffect(() => {
-    setUploading(false);
-    setSubmittedThisSession(false);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setUploading(false);
+      setSubmittedThisSession(false);
+    }, []),
+  );
 
   const { data: challenge, isLoading: challengeLoading } = useQuery({
     queryKey: ["challenge-detail", id || slug],
