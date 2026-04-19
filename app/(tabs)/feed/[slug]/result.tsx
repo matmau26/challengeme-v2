@@ -8,7 +8,6 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
 // import { captureRef } from "react-native-view-shot"; // Disabled on Expo Go (missing native module RNViewShot)
 // import * as Sharing from "expo-sharing";
@@ -65,7 +64,6 @@ export default function Result() {
   const { unitSystem } = useUnitSystem();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const tabBarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
@@ -175,16 +173,16 @@ export default function Result() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top", "bottom"]}>
       {/* Hidden ShareCard capture disabled on Expo Go (RNViewShot native module unavailable). */}
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: 16,
-          paddingBottom: tabBarHeight + 24,
           flexGrow: 1,
           justifyContent: "center",
           alignItems: "center",
+          paddingHorizontal: 24,
+          paddingVertical: 24,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -262,7 +260,7 @@ export default function Result() {
         </FadeInView>
 
         {/* Stats */}
-        <FadeInView duration={400} delay={300} className="flex-row gap-2 mb-4">
+        <FadeInView duration={400} delay={300} className="w-full flex-row gap-2 mb-4">
           {[
             { label: "Performance", value: displayValue },
             { label: lang === "fr" ? "Rang Mondial" : "World Rank", value: `#${rank}` },
@@ -299,7 +297,7 @@ export default function Result() {
         </FadeInView>
 
         {/* Action buttons */}
-        <FadeInView duration={400} delay={500} className="gap-3">
+        <FadeInView duration={400} delay={500} className="w-full gap-3">
           <TouchableOpacity
             onPress={handleShare}
             activeOpacity={0.85}
