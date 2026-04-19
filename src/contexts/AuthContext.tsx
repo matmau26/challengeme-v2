@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
+import * as Linking from "expo-linking";
 import { supabase } from "@/src/lib/supabase";
 
 interface AuthContextType {
@@ -38,6 +39,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleDeepLink = async (url: string | null) => {
+      if (!url) return;
+
+      const queryString = url.split("#")[1] || url.split("?")[1];
+      if (!queryString) return;
+
+      const params: Record<string, string> = {};
+      queryString.split("&").forEach((pair) => {
+        const [key, value] = pair.split("=");
+        if (key && value) params[key] = decodeURIComponent(value);
+      });
+
+      if (params.access_token && params.refresh_token) {
+        console.log("[AUTH] Token intercepté depuis l'URL ! Configuration de la session...");
+        const { error } = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+
+        if (error) {
+          console.error("[AUTH] Erreur d'injection du token:", error.message);
+        }
+      }
+    };
+
+    Linking.getInitialURL().then(handleDeepLink);
+
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const signOut = async () => {
