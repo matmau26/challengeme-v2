@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Stack, useSegments, useRouter } from "expo-router";
+import { Stack, useSegments, useRouter, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
@@ -18,19 +18,21 @@ function NavigationGuard() {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !rootNavigationState?.key) return;
 
+    const inAuthGroup = segments[0] === "(auth)" || segments[0] === "(tabs)";
     const inPublicGroup = segments[0] === "(public)";
-    const inTabsGroup = segments[0] === "(tabs)";
+    const isRoot = (segments as string[]).length === 0;
 
-    if (session && !inTabsGroup) {
-      router.replace({ pathname: "/(tabs)/feed/" });
+    if (session && (!inAuthGroup || isRoot)) {
+      router.replace("/(tabs)/feed");
     } else if (!session && !inPublicGroup) {
-      router.replace({ pathname: "/(public)/landing/" });
+      router.replace("/(public)/landing");
     }
-  }, [session, isLoading, segments]);
+  }, [session, isLoading, segments, rootNavigationState?.key]);
 
   return null;
 }
