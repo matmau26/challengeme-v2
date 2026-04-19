@@ -14,10 +14,10 @@ import { FadeInView } from "@/src/components/ui/FadeInView";
 import { useI18n } from "@/src/lib/i18n";
 import { getCategoryConfig } from "@/src/lib/types";
 import { getCategoryIcon } from "@/src/lib/categoryIcon";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { Plus, Trophy, Dumbbell } from "lucide-react-native";
+import { Plus, Trophy, Dumbbell, X } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 
@@ -58,6 +58,7 @@ export default function FeedScreen() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
   const { fmt } = useUnitSystem();
+  const queryClient = useQueryClient();
   const [activeCategory, setActiveCategory] = useState("all");
   const [gymOnly, setGymOnly] = useState(false);
   const listRef = useRef<FlatList>(null);
@@ -132,8 +133,9 @@ export default function FeedScreen() {
     },
   });
 
+  const pendingDuelsKey = ["pending-duels", user?.id];
   const { data: pendingDuels = [] } = useQuery<PendingDuel[]>({
-    queryKey: ["pending-duels", user?.id],
+    queryKey: pendingDuelsKey,
     enabled: !!user?.id,
     staleTime: 30_000,
     queryFn: async () => {
@@ -144,6 +146,7 @@ export default function FeedScreen() {
           "id, score_to_beat, sender:sender_id(username, avatar_url), challenge:challenge_id(id, title, category)",
         )
         .eq("receiver_id", user.id)
+        .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) return [];
       return ((data || []) as unknown as PendingDuel[]).filter(
@@ -151,6 +154,16 @@ export default function FeedScreen() {
       );
     },
   });
+
+  const handleDeclineChallenge = async (duelId: string) => {
+    queryClient.setQueryData<PendingDuel[]>(pendingDuelsKey, (prev) =>
+      (prev || []).filter((d) => d.id !== duelId),
+    );
+    await supabase
+      .from("notifications")
+      .update({ status: "declined" })
+      .eq("id", duelId);
+  };
 
   const { data: myGymName = null } = useQuery({
     queryKey: ["my-gym-name", user?.id],
@@ -336,9 +349,20 @@ export default function FeedScreen() {
                       },
                     })
                   }
-                  className="w-72 bg-card border border-orange-500/50 rounded-2xl p-4"
+                  className="w-72 bg-card border border-orange-500/50 rounded-2xl p-4 relative"
                 >
-                  <View className="flex-row items-center gap-2 mb-2">
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeclineChallenge(duel.id);
+                    }}
+                    hitSlop={12}
+                    className="absolute top-2 right-2 w-6 h-6 items-center justify-center rounded-full"
+                    activeOpacity={0.7}
+                  >
+                    <X size={14} color="#888888" />
+                  </TouchableOpacity>
+                  <View className="flex-row items-center gap-2 mb-2 pr-6">
                     <UserAvatar
                       avatarUrl={duel.sender?.avatar_url ?? null}
                       username={senderName}

@@ -27,7 +27,7 @@ import {
   type Category,
 } from "@/src/lib/types";
 import { getCategoryIcon } from "@/src/lib/categoryIcon";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
@@ -36,7 +36,7 @@ import { formatTextUnits, formatDynamicUnit, saveWeightToMetric, saveDistanceToM
 const submittedChallenges = new Set<string>();
 
 export default function ChallengeDetailScreen() {
-  const { slug, id } = useLocalSearchParams<{ slug: string; id: string }>();
+  const { slug, id, duel_id } = useLocalSearchParams<{ slug: string; id: string; duel_id?: string }>();
 
   // Guard: expo-router can match this route with no params during navigation transitions
   if (!slug && !id) return <Redirect href="/(tabs)/feed/" />;
@@ -44,6 +44,7 @@ export default function ChallengeDetailScreen() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
   const { unitSystem } = useUnitSystem();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
   const scrollRef = useRef<ScrollView>(null);
@@ -305,6 +306,7 @@ export default function ChallengeDetailScreen() {
           .eq("sender_id", user.id)
           .eq("receiver_id", opponent.id)
           .eq("challenge_id", challenge.id)
+          .eq("status", "pending")
           .maybeSingle();
 
         if (!existingDuel) {
@@ -327,6 +329,14 @@ export default function ChallengeDetailScreen() {
               : "Your friend already has a harder challenge pending for this activity.",
           );
         }
+      }
+
+      if (duel_id) {
+        await supabase
+          .from("notifications")
+          .update({ status: "completed" })
+          .eq("id", duel_id);
+        queryClient.invalidateQueries({ queryKey: ["pending-duels", user.id] });
       }
 
       submittedChallenges.add(challenge.id);
