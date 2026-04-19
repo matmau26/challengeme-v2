@@ -119,6 +119,21 @@ export default function AuthScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    console.log("[AUTH] Google OAuth press");
+    setLoading(true);
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: "challengeme://auth/callback" },
+    });
+    setLoading(false);
+    if (error) {
+      console.log("[AUTH] Google OAuth error:", error.message);
+      setError(translateError(error.message, lang));
+    }
+  };
+
   const handleSubmit = () => {
     console.log("[AUTH] submit press — mode:", isForgotPassword ? "forgot" : isSignUp ? "signup" : "login", "email:", email, "isValid:", isValid);
     if (isForgotPassword) handleForgotPassword();
@@ -164,7 +179,7 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
 
-          <FadeInView duration={400} className="space-y-6">
+          <FadeInView duration={400}>
             {/* Logo */}
             <View className="items-center mb-2">
               <Text className="text-2xl font-black">
@@ -190,14 +205,42 @@ export default function AuthScreen() {
 
             {/* Feedback */}
             {!!success && (
-              <View className="bg-primary/20 border border-primary rounded-xl p-3">
+              <View className="bg-primary/20 border border-primary rounded-xl p-3 mt-6">
                 <Text className="text-xs text-primary font-bold text-center">{success}</Text>
               </View>
             )}
             {!!error && (
-              <View className="bg-destructive/20 border border-destructive rounded-xl p-3">
+              <View className="bg-destructive/20 border border-destructive rounded-xl p-3 mt-6">
                 <Text className="text-xs text-destructive font-bold text-center">{error}</Text>
               </View>
+            )}
+
+            {/* Google OAuth */}
+            {!isForgotPassword && (
+              <>
+                <TouchableOpacity
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  className="flex-row items-center justify-center bg-muted/50 p-4 rounded-xl border border-border w-full mt-6"
+                >
+                  <View className="w-5 h-5 rounded-full bg-white items-center justify-center mr-3">
+                    <Text className="text-[12px] font-black" style={{ color: "#4285F4" }}>G</Text>
+                  </View>
+                  <Text className="text-sm font-bold text-foreground">
+                    {label("Continuer avec Google", "Continue with Google")}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Separator */}
+                <View className="flex-row items-center my-6 w-full">
+                  <View className="flex-1 h-[1px] bg-border" />
+                  <Text className="mx-4 text-muted-foreground text-xs uppercase">
+                    {label("Ou par email", "Or by email")}
+                  </Text>
+                  <View className="flex-1 h-[1px] bg-border" />
+                </View>
+              </>
             )}
 
             {/* Sign-up only fields */}
@@ -222,28 +265,32 @@ export default function AuthScreen() {
               </View>
             )}
             {isSignUp && !isForgotPassword && (
-              <Input
-                label={label("Nom d'utilisateur", "Username")}
-                value={username}
-                onChangeText={setUsername}
-                placeholder={label("Choisis un pseudo...", "Pick a username...")}
-              />
+              <View className="mt-5">
+                <Input
+                  label={label("Nom d'utilisateur", "Username")}
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder={label("Choisis un pseudo...", "Pick a username...")}
+                />
+              </View>
             )}
 
             {/* Email */}
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              autoCapitalize="none"
-            />
+            <View className={isForgotPassword ? "mt-6" : "mt-5"}>
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                autoCapitalize="none"
+              />
+            </View>
 
             {/* Password */}
             {!isForgotPassword && (
-              <View>
+              <View className="mt-5">
                 <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
                   {label("Mot de passe", "Password")}
                 </Text>
@@ -274,7 +321,7 @@ export default function AuthScreen() {
                   setIsForgotPassword(true);
                   resetState();
                 }}
-                className="self-end -mt-2"
+                className="self-end mt-3"
               >
                 <Text className="text-xs text-muted-foreground underline">
                   {label("Mot de passe oublié ?", "Forgot password?")}
@@ -284,7 +331,7 @@ export default function AuthScreen() {
 
             {/* CGU checkbox */}
             {isSignUp && !isForgotPassword && (
-              <View className="gap-3 pt-2">
+              <View className="mt-5">
                 <TouchableOpacity
                   onPress={() => setAcceptCGU(!acceptCGU)}
                   className="flex-row items-start gap-3"
@@ -304,7 +351,13 @@ export default function AuthScreen() {
                     {label("J'accepte les ", "I accept the ")}
                     <Text
                       className="text-primary font-bold"
-                      onPress={() => Linking.openURL("https://challengeme.pro/terms")}
+                      onPress={() =>
+                        Linking.openURL(
+                          lang === "en"
+                            ? "https://challengeme.pro/terms-en"
+                            : "https://challengeme.pro/terms",
+                        )
+                      }
                     >
                       {label("Conditions Générales d'Utilisation", "Terms and Conditions")}
                     </Text>
@@ -318,7 +371,7 @@ export default function AuthScreen() {
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={loading || !isValid}
-              className={`w-full py-4 rounded-xl items-center ${
+              className={`w-full py-4 rounded-xl items-center mt-6 ${
                 loading || !isValid ? "bg-muted" : "bg-primary"
               }`}
               activeOpacity={0.85}
@@ -342,7 +395,7 @@ export default function AuthScreen() {
 
             {/* Switch mode */}
             {!isForgotPassword && (
-              <View className="flex-row justify-center gap-1">
+              <View className="flex-row justify-center gap-1 mt-5">
                 <Text className="text-xs text-muted-foreground">
                   {isSignUp
                     ? label("Déjà un compte ?", "Already have an account?")
