@@ -327,40 +327,38 @@ export default function ChallengeDetailScreen() {
               ? "Impossible de vérifier les défis en attente."
               : "Could not check pending challenges.",
           );
-        } else if (!existingDuel) {
-          const { error: insertError } = await supabase.from("notifications").insert({
-            sender_id: user.id,
-            receiver_id: opponent.id,
-            challenge_id: challenge.id,
-            score_to_beat: newScoreToBeat,
-            status: "pending",
-          });
-          if (insertError) {
-            console.error("[DUEL] insert notification error:", insertError);
+        } else if (existingDuel && (existingDuel.score_to_beat ?? 0) >= newScoreToBeat) {
+          Alert.alert(
+            lang === "fr" ? "Défi déjà plus difficile" : "Challenge already harder",
+            lang === "fr"
+              ? "Le défi actuel est déjà plus difficile. Score insuffisant pour l'écraser."
+              : "The current challenge is already harder. Score too low to overwrite it.",
+          );
+        } else {
+          const { error: upsertError } = await supabase
+            .from("notifications")
+            .upsert(
+              {
+                sender_id: user.id,
+                receiver_id: opponent.id,
+                challenge_id: challenge.id,
+                score_to_beat: newScoreToBeat,
+                status: "pending",
+                is_read: false,
+                created_at: new Date().toISOString(),
+              },
+              {
+                onConflict: "sender_id, receiver_id, challenge_id",
+                ignoreDuplicates: false,
+              },
+            );
+          if (upsertError) {
+            console.error("[DUEL] upsert notification error:", upsertError);
             Alert.alert(
               lang === "fr" ? "Erreur défi" : "Challenge error",
               lang === "fr" ? "Impossible d'envoyer le défi." : "Could not send challenge.",
             );
           }
-        } else if ((existingDuel.score_to_beat ?? 0) < newScoreToBeat) {
-          const { error: updateError } = await supabase
-            .from("notifications")
-            .update({ score_to_beat: newScoreToBeat })
-            .eq("id", existingDuel.id);
-          if (updateError) {
-            console.error("[DUEL] update score_to_beat error:", updateError);
-            Alert.alert(
-              lang === "fr" ? "Erreur défi" : "Challenge error",
-              lang === "fr" ? "Impossible de mettre à jour le défi." : "Could not update challenge.",
-            );
-          }
-        } else {
-          Alert.alert(
-            lang === "fr" ? "Score insuffisant" : "Score too low",
-            lang === "fr"
-              ? "Score insuffisant pour écraser le défi en attente."
-              : "Score too low to overwrite the pending challenge.",
-          );
         }
       }
 
