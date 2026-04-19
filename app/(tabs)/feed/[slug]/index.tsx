@@ -14,7 +14,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { ChevronLeft, Play, Camera, X, AlertTriangle, UserPlus } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
