@@ -145,7 +145,6 @@ export default function Onboarding() {
   const [selectedLanguage, setSelectedLanguage] = useState<"fr" | "en">(lang);
 
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"continent" | "country">("continent");
 
@@ -171,32 +170,42 @@ export default function Onboarding() {
       Alert.alert(lang === "fr" ? "Photo trop lourde (max 5 Mo)" : "Photo too large (max 5 MB)");
       return;
     }
-    setUploading(true);
-    try {
-      const ext = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
-      const mimeType = ext === "png" ? "image/png" : "image/jpeg";
-      const filePath = `${user.id}/avatar.${ext}`;
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-      const arrayBuffer = await new Response(blob).arrayBuffer();
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, arrayBuffer, { contentType: mimeType, upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      setAvatarUri(`${urlData.publicUrl}?t=${Date.now()}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert(lang === "fr" ? "Erreur de sauvegarde" : "Save error", message);
-    } finally {
-      setUploading(false);
-    }
+    setAvatarUri(asset.uri);
   };
 
   const handleFinish = async () => {
     if (!user) return;
     setSaving(true);
     try {
+      let avatarPublicUrl: string | null = null;
+
+      if (avatarUri && !avatarUri.startsWith("http")) {
+        const imageUri = avatarUri;
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        const fileExt = imageUri.split(".").pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, blob, {
+            contentType: `image/${fileExt}`,
+            upsert: true,
+          });
+
+        if (uploadError) {
+          Alert.alert("Erreur Upload", uploadError.message);
+          setSaving(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+        avatarPublicUrl = urlData.publicUrl;
+      } else {
+        avatarPublicUrl = avatarUri;
+      }
+
       const { error: langError } = await supabase.auth.updateUser({
         data: { language: selectedLanguage },
       });
@@ -212,7 +221,7 @@ export default function Onboarding() {
         country,
         mantra: motto.trim() || null,
         gym_name: gymName.trim() || null,
-        avatar_url: avatarUri,
+        avatar_url: avatarPublicUrl,
         cgu_accepted_at: new Date().toISOString(),
         cgu_version: "Avril 2026",
       });
@@ -272,13 +281,10 @@ export default function Onboarding() {
             <View className="items-center">
               <TouchableOpacity
                 onPress={handlePickPhoto}
-                disabled={uploading}
                 className="w-24 h-24 rounded-full bg-muted border border-border items-center justify-center overflow-hidden"
                 activeOpacity={0.8}
               >
-                {uploading ? (
-                  <ActivityIndicator color="#00FF87" />
-                ) : avatarUri ? (
+                {avatarUri ? (
                   <Image source={{ uri: avatarUri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                 ) : (
                   <Camera size={24} color="#888888" />
@@ -416,10 +422,10 @@ export default function Onboarding() {
           <View className="pt-4">
             <TouchableOpacity
               onPress={handleFinish}
-              disabled={saving || uploading}
+              disabled={saving}
               className="w-full py-4 rounded-xl bg-primary items-center"
               style={{
-                opacity: saving || uploading ? 0.5 : 1,
+                opacity: saving ? 0.5 : 1,
                 shadowColor: "#00FF87",
                 shadowOpacity: 0.3,
                 shadowRadius: 8,
