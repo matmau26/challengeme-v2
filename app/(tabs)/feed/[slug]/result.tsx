@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -24,8 +24,9 @@ import {
   computeScore,
   type MetricType,
 } from "@/src/lib/types";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
 // import { ShareCard } from "@/src/components/ShareCard"; // Disabled on Expo Go
@@ -62,7 +63,20 @@ export default function Result() {
 
   const { lang } = useI18n();
   const { unitSystem } = useUnitSystem();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const tabBarHeight = useBottomTabBarHeight();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
+    queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["user-best-scores", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["attempt-counts"] });
+    if (id) {
+      queryClient.invalidateQueries({ queryKey: ["challenge-top-attempts", id] });
+      queryClient.invalidateQueries({ queryKey: ["challenge-attempt-count", id] });
+    }
+  }, [queryClient, user?.id, id]);
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
 

@@ -252,6 +252,7 @@ export default function Onboarding() {
       console.log("[ONBOARDING] Profil finalisé avec succès !");
       invalidateProfile();
       await queryClient.refetchQueries({ queryKey: ["user-profile-data", user.id], exact: true });
+      queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
       router.replace("/(tabs)/feed");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

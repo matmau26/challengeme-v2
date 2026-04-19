@@ -68,7 +68,17 @@ export default function ChallengeDetailScreen() {
     useCallback(() => {
       setUploading(false);
       setSubmittedThisSession(false);
-    }, []),
+      setFormError(null);
+      setProofError(false);
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ["challenge-top-attempts", id] });
+        queryClient.invalidateQueries({ queryKey: ["challenge-attempt-count", id] });
+      }
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ["user-best-scores", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user.id] });
+      }
+    }, [id, user?.id, queryClient]),
   );
 
   const { data: challenge, isLoading: challengeLoading } = useQuery({

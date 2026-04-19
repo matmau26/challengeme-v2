@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useCallback, useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { useI18n } from "@/src/lib/i18n";
 import { getCategoryConfig } from "@/src/lib/types";
@@ -200,6 +200,16 @@ export default function FeedScreen() {
       return counts;
     },
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["user-best-scores", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["attempt-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["gym-attempt-counts", myGymName] });
+      queryClient.invalidateQueries({ queryKey: ["pending-duels", user?.id] });
+    }, [queryClient, user?.id, myGymName]),
+  );
 
   const categories = useMemo(() => {
     const safe = Array.isArray(challenges) ? challenges : [];
