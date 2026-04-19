@@ -10,13 +10,14 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { FadeInView } from "@/src/components/ui/FadeInView";
-import { ChevronLeft, Play, Camera, X, AlertTriangle, UserPlus } from "lucide-react-native";
+import { ChevronLeft, Play, Camera, X, AlertTriangle, UserPlus, Eye } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
 import { UserSearch, type SearchedUser } from "@/src/components/UserSearch";
 import { useI18n } from "@/src/lib/i18n";
@@ -63,6 +64,7 @@ export default function ChallengeDetailScreen() {
   const [filterGender, setFilterGender] = useState<"all" | "homme" | "femme">("all");
   const [opponent, setOpponent] = useState<SearchedUser | null>(null);
   const [showOpponentSearch, setShowOpponentSearch] = useState(false);
+  const [viewProof, setViewProof] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -683,6 +685,16 @@ export default function ChallengeDetailScreen() {
                         <Text className="font-bold text-primary text-xs">
                           {attempt.score} XP
                         </Text>
+                        {i === 0 && attempt.proof_url ? (
+                          <TouchableOpacity
+                            onPress={() => setViewProof(attempt.proof_url)}
+                            hitSlop={8}
+                            className="ml-1 p-1 bg-primary/20 rounded-full"
+                            activeOpacity={0.7}
+                          >
+                            <Eye size={14} color="#00FF87" />
+                          </TouchableOpacity>
+                        ) : null}
                       </View>
                     );
                   })}
@@ -940,6 +952,31 @@ export default function ChallengeDetailScreen() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={!!viewProof}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewProof(null)}
+      >
+        <View className="flex-1 bg-black/90 items-center justify-center">
+          <TouchableOpacity
+            onPress={() => setViewProof(null)}
+            className="absolute top-12 right-4 w-9 h-9 rounded-full bg-black/60 items-center justify-center z-10"
+            hitSlop={12}
+            activeOpacity={0.7}
+          >
+            <X size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+          {viewProof ? (
+            <Image
+              source={{ uri: viewProof }}
+              style={{ width: "100%", height: "80%" }}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
