@@ -36,6 +36,22 @@ import { formatTextUnits, formatDynamicUnit, saveWeightToMetric, saveDistanceToM
 
 const submittedChallenges = new Set<string>();
 
+const formatPerformance = (score: number, metricType: string, unit?: string): string => {
+  if (metricType === "time") {
+    const totalSeconds = Math.floor(score);
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    if (totalSeconds < 3600) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+    }
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutesRemaining = Math.floor((totalSeconds % 3600) / 60);
+    return minutesRemaining > 0 ? `${hours}h ${minutesRemaining}m` : `${hours}h`;
+  }
+  return `${score} ${unit || ""}`.trim();
+};
+
 export default function ChallengeDetailScreen() {
   const { slug, id, duel_id } = useLocalSearchParams<{ slug: string; id: string; duel_id?: string }>();
 
@@ -681,12 +697,18 @@ export default function ChallengeDetailScreen() {
                         >
                           {attempt.username || "Athlete"}
                         </Text>
-                        <Text className="text-muted-foreground text-xs">
-                          {formatDynamicUnit(attempt.time_or_reps, unitSystem)}
-                        </Text>
-                        <Text className="font-bold text-primary text-xs">
-                          {attempt.score} XP
-                        </Text>
+                        <View className="items-end">
+                          <Text className="text-foreground font-bold text-xs" numberOfLines={1}>
+                            {formatPerformance(
+                              attempt.score,
+                              challenge.metric_type,
+                              challenge.unit,
+                            )}
+                          </Text>
+                          <Text className="font-bold text-primary text-[10px]">
+                            {attempt.score} XP
+                          </Text>
+                        </View>
                         {i === 0 && attempt.proof_url ? (
                           <TouchableOpacity
                             onPress={() => setViewProof(attempt.proof_url)}
