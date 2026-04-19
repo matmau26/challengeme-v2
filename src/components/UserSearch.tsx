@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
   Pressable,
   ActivityIndicator,
 } from "react-native";
@@ -87,6 +86,7 @@ export function UserSearch({
           }}
           placeholder={placeholder || "Chercher un pseudo…"}
           placeholderTextColor="#666666"
+          keyboardAppearance="dark"
           autoCapitalize="none"
           autoCorrect={false}
           className="flex-1 text-foreground text-sm ml-2"
@@ -110,14 +110,11 @@ export function UserSearch({
 
       {results.length > 0 && (
         <View className="bg-card border border-border rounded-xl mt-2 overflow-hidden">
-          <FlatList
-            data={results}
-            keyboardShouldPersistTaps="handled"
-            keyExtractor={(item) => item.id}
-            ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: "#2A2A2A" }} />
-            )}
-            renderItem={({ item }) => (
+          {results.map((item, index) => (
+            <View key={item.id}>
+              {index > 0 && (
+                <View style={{ height: 1, backgroundColor: "#2A2A2A" }} />
+              )}
               <View className="flex-row items-center px-3 py-2">
                 <UserAvatar
                   avatarUrl={item.avatar_url}
@@ -150,8 +147,8 @@ export function UserSearch({
                   </Text>
                 </Pressable>
               </View>
-            )}
-          />
+            </View>
+          ))}
         </View>
       )}
 
