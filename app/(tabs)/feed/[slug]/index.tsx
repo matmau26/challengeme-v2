@@ -107,13 +107,19 @@ export default function ChallengeDetailScreen() {
     queryKey: ["challenge-top-attempts", challenge?.id],
     queryFn: async () => {
       if (!challenge) return [];
-      const { data } = await supabase
-        .from("attempts")
-        .select("id, user_id, score, time_or_reps, proof_url, badge_earned")
-        .eq("challenge_id", challenge.id)
-        .order("score", { ascending: false })
-        .limit(10);
-      return data || [];
+      const isLowerBetter = challenge.metric_type === "time";
+      const { data, error } = await supabase.rpc("get_challenge_leaderboard", {
+        p_challenge_id: challenge.id,
+        p_is_lower_better: isLowerBetter,
+        p_limit_count: 10,
+      });
+      if (error) {
+        console.error("[LEADERBOARD] rpc error:", error);
+        return [];
+      }
+      return [...(data || [])].sort((a: any, b: any) =>
+        isLowerBetter ? a.score - b.score : b.score - a.score,
+      );
     },
     enabled: !!challenge?.id,
   });
@@ -131,16 +137,6 @@ export default function ChallengeDetailScreen() {
     enabled: !!challenge?.id,
   });
 
-  const attemptUserIds = [...new Set(dbAttempts.map((a: any) => a.user_id))];
-  const { data: attemptUsers = [] } = useQuery({
-    queryKey: ["attempt-users", attemptUserIds.join(",")],
-    queryFn: async () => {
-      if (attemptUserIds.length === 0) return [];
-      const { data } = await supabase.rpc("get_public_profiles", { user_ids: attemptUserIds });
-      return data || [];
-    },
-    enabled: attemptUserIds.length > 0,
-  });
 
   const handleAsset = (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled || !result.assets[0]) return;
@@ -492,12 +488,9 @@ export default function ChallengeDetailScreen() {
     unitSystem,
   );
 
-  const userMap: Record<string, any> = {};
-  attemptUsers.forEach((u: any) => { userMap[u.id] = u; });
-
   const filteredAttempts = dbAttempts.filter((a: any) => {
     if (filterGender === "all") return true;
-    return userMap[a.user_id]?.gender === filterGender;
+    return a.gender === filterGender;
   });
 
   return (
@@ -669,22 +662,24 @@ export default function ChallengeDetailScreen() {
               ) : (
                 <View className="gap-2">
                   {filteredAttempts.map((attempt: any, i: number) => {
-                    const u = userMap[attempt.user_id];
                     return (
-                      <View key={attempt.id} className="flex-row items-center gap-3">
-                        <Text className="font-bold text-muted-foreground w-5 text-right text-sm">
+                      <View key={attempt.user_id} className="flex-row items-center gap-3">
+                        <Text
+                          numberOfLines={1}
+                          className="font-bold text-muted-foreground w-8 text-center text-sm"
+                        >
                           #{i + 1}
                         </Text>
                         <UserAvatar
-                          avatarUrl={u?.avatar_url}
-                          username={u?.username}
+                          avatarUrl={attempt.avatar_url}
+                          username={attempt.username}
                           size="xs"
                         />
                         <Text
                           className="font-medium text-foreground flex-1 text-sm"
                           numberOfLines={1}
                         >
-                          {u?.username || "Athlete"}
+                          {attempt.username || "Athlete"}
                         </Text>
                         <Text className="text-muted-foreground text-xs">
                           {formatDynamicUnit(attempt.time_or_reps, unitSystem)}
