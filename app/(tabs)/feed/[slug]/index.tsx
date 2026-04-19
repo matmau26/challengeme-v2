@@ -310,7 +310,7 @@ export default function ChallengeDetailScreen() {
 
       if (opponent) {
         const newScoreToBeat = Math.round(estScore);
-        const { data: existingDuel } = await supabase
+        const { data: existingDuel, error: selectError } = await supabase
           .from("notifications")
           .select("id, score_to_beat")
           .eq("sender_id", user.id)
@@ -319,33 +319,65 @@ export default function ChallengeDetailScreen() {
           .eq("status", "pending")
           .maybeSingle();
 
-        if (!existingDuel) {
-          await supabase.from("notifications").insert({
+        if (selectError) {
+          console.error("[DUEL] select existing notification error:", selectError);
+          Alert.alert(
+            lang === "fr" ? "Erreur défi" : "Challenge error",
+            lang === "fr"
+              ? "Impossible de vérifier les défis en attente."
+              : "Could not check pending challenges.",
+          );
+        } else if (!existingDuel) {
+          const { error: insertError } = await supabase.from("notifications").insert({
             sender_id: user.id,
             receiver_id: opponent.id,
             challenge_id: challenge.id,
             score_to_beat: newScoreToBeat,
+            status: "pending",
           });
+          if (insertError) {
+            console.error("[DUEL] insert notification error:", insertError);
+            Alert.alert(
+              lang === "fr" ? "Erreur défi" : "Challenge error",
+              lang === "fr" ? "Impossible d'envoyer le défi." : "Could not send challenge.",
+            );
+          }
         } else if ((existingDuel.score_to_beat ?? 0) < newScoreToBeat) {
-          await supabase
+          const { error: updateError } = await supabase
             .from("notifications")
             .update({ score_to_beat: newScoreToBeat })
             .eq("id", existingDuel.id);
+          if (updateError) {
+            console.error("[DUEL] update score_to_beat error:", updateError);
+            Alert.alert(
+              lang === "fr" ? "Erreur défi" : "Challenge error",
+              lang === "fr" ? "Impossible de mettre à jour le défi." : "Could not update challenge.",
+            );
+          }
         } else {
           Alert.alert(
-            lang === "fr" ? "Défi déjà en attente" : "Challenge already pending",
+            lang === "fr" ? "Score insuffisant" : "Score too low",
             lang === "fr"
-              ? "Ton ami a déjà un défi plus difficile en attente pour cette activité."
-              : "Your friend already has a harder challenge pending for this activity.",
+              ? "Score insuffisant pour écraser le défi en attente."
+              : "Score too low to overwrite the pending challenge.",
           );
         }
       }
 
       if (duel_id) {
-        await supabase
+        const { error: completeError } = await supabase
           .from("notifications")
           .update({ status: "completed" })
           .eq("id", duel_id);
+        if (completeError) {
+          console.error("[DUEL] mark completed error:", completeError);
+          Alert.alert(
+            lang === "fr" ? "Erreur défi" : "Challenge error",
+            lang === "fr"
+              ? "Impossible de clôturer le défi reçu."
+              : "Could not close the received challenge.",
+          );
+        }
         queryClient.invalidateQueries({ queryKey: ["pending-duels", user.id] });
       }
 

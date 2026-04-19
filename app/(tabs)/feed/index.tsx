@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
@@ -148,7 +149,10 @@ export default function FeedScreen() {
         .eq("receiver_id", user.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
-      if (error) return [];
+      if (error) {
+        console.error("[DUEL] fetch pending notifications error:", error);
+        return [];
+      }
       return ((data || []) as unknown as PendingDuel[]).filter(
         (d) => d.challenge && d.sender,
       );
@@ -156,13 +160,24 @@ export default function FeedScreen() {
   });
 
   const handleDeclineChallenge = async (duelId: string) => {
+    const previous = queryClient.getQueryData<PendingDuel[]>(pendingDuelsKey);
     queryClient.setQueryData<PendingDuel[]>(pendingDuelsKey, (prev) =>
       (prev || []).filter((d) => d.id !== duelId),
     );
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ status: "declined" })
       .eq("id", duelId);
+    if (error) {
+      console.error("[DUEL] decline notification error:", error);
+      if (previous) queryClient.setQueryData(pendingDuelsKey, previous);
+      Alert.alert(
+        lang === "fr" ? "Erreur" : "Error",
+        lang === "fr"
+          ? "Impossible de refuser le défi. Réessaie."
+          : "Could not decline the challenge. Try again.",
+      );
+    }
   };
 
   const { data: myGymName = null } = useQuery({
