@@ -51,6 +51,7 @@ export default function AuthScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [acceptCGU, setAcceptCGU] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
   const resetState = () => {
     setError("");
@@ -65,13 +66,14 @@ export default function AuthScreen() {
       email,
       password,
       options: {
-        emailRedirectTo: "challengeme:///(tabs)/feed",
+        emailRedirectTo: "https://www.challengeme.pro/confirm",
         data: {
           username,
           first_name: firstName,
           last_name: lastName,
           cgu_accepted_at: new Date().toISOString(),
           cgu_version: "Avril 2026",
+          newsletter_opt_in: newsletterOptIn,
         },
       },
     });
@@ -320,6 +322,34 @@ export default function AuthScreen() {
                       {label("Conditions Générales d'Utilisation", "Terms and Conditions")}
                     </Text>
                     <Text className="text-destructive"> *</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Newsletter opt-in checkbox */}
+            {isSignUp && !isForgotPassword && (
+              <View className="mt-3">
+                <TouchableOpacity
+                  onPress={() => setNewsletterOptIn(!newsletterOptIn)}
+                  className="flex-row items-start gap-3"
+                >
+                  <View
+                    className={`w-4 h-4 rounded mt-0.5 border-2 items-center justify-center ${
+                      newsletterOptIn ? "bg-primary border-primary" : "border-border"
+                    }`}
+                  >
+                    {newsletterOptIn && (
+                      <Text className="text-primary-foreground text-[10px] font-black">
+                        {"\u2713"}
+                      </Text>
+                    )}
+                  </View>
+                  <Text className="text-xs text-muted-foreground flex-1 leading-relaxed">
+                    {label(
+                      "J'accepte de recevoir des emails (nouveaux challenges, classements, etc.)",
+                      "I agree to receive emails (new challenges, rankings, etc.)",
+                    )}
                   </Text>
                 </TouchableOpacity>
               </View>
