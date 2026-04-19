@@ -15,7 +15,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system/legacy";
+import { Video, ResizeMode } from "expo-av";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { ChevronLeft, Play, Camera, X, AlertTriangle, UserPlus, Eye } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
@@ -321,17 +321,24 @@ export default function ChallengeDetailScreen() {
       let uploadedFilePath: string | null = null;
 
       if (proofUri) {
-        const ext = proofUri.split(".").pop()?.toLowerCase() || "jpg";
-        const mimeType = proofIsVideo ? "video/mp4" : ext === "png" ? "image/png" : "image/jpeg";
+        const lowerUri = proofUri.toLowerCase();
+        const isVideo = proofIsVideo || lowerUri.endsWith(".mp4") || lowerUri.endsWith(".mov");
+        const ext = isVideo ? "mp4" : lowerUri.endsWith(".png") ? "png" : "jpeg";
+        const mimeType = isVideo ? "video/mp4" : ext === "png" ? "image/png" : "image/jpeg";
         const filePath = `${user.id}/${Date.now()}.${ext}`;
-        const base64 = await FileSystem.readAsStringAsync(proofUri, {
-          encoding: "base64" as const,
-        });
-        const blob = await (await fetch(`data:${mimeType};base64,${base64}`)).blob();
+
+        const formData = new FormData();
+        formData.append("file", {
+          uri: proofUri,
+          name: filePath.split("/").pop() || `proof.${ext}`,
+          type: mimeType,
+        } as any);
+
         const { error: uploadError } = await supabase.storage
           .from("preuves_video")
-          .upload(filePath, blob, { contentType: mimeType });
-        if (uploadError) throw uploadError;
+          .upload(filePath, formData, { contentType: mimeType, upsert: true });
+        if (uploadError) throw new Error(`Erreur Upload: ${uploadError.message}`);
+
         uploadedFilePath = filePath;
         const { data: urlData } = supabase.storage.from("preuves_video").getPublicUrl(filePath);
         proofUrl = urlData.publicUrl;
@@ -866,11 +873,21 @@ export default function ChallengeDetailScreen() {
 
                 {proofUri ? (
                   <View className="relative rounded-xl overflow-hidden border border-border">
-                    <Image
-                      source={{ uri: proofUri }}
-                      style={{ width: "100%", height: 160 }}
-                      resizeMode="cover"
-                    />
+                    {proofIsVideo ? (
+                      <Video
+                        source={{ uri: proofUri }}
+                        style={{ width: "100%", height: 160 }}
+                        useNativeControls
+                        resizeMode={ResizeMode.CONTAIN}
+                        isLooping={false}
+                      />
+                    ) : (
+                      <Image
+                        source={{ uri: proofUri }}
+                        style={{ width: "100%", height: 160 }}
+                        resizeMode="cover"
+                      />
+                    )}
                     <TouchableOpacity
                       onPress={() => { setProofUri(null); setProofIsVideo(false); }}
                       className="absolute top-2 right-2 w-7 h-7 rounded-full items-center justify-center"
@@ -969,11 +986,22 @@ export default function ChallengeDetailScreen() {
             <X size={18} color="#FFFFFF" />
           </TouchableOpacity>
           {viewProof ? (
-            <Image
-              source={{ uri: viewProof }}
-              style={{ width: "100%", height: "80%" }}
-              resizeMode="contain"
-            />
+            /\.(mp4|mov)(\?|$)/i.test(viewProof) ? (
+              <Video
+                source={{ uri: viewProof }}
+                style={{ width: "100%", height: "80%" }}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                isLooping={false}
+                shouldPlay
+              />
+            ) : (
+              <Image
+                source={{ uri: viewProof }}
+                style={{ width: "100%", height: "80%" }}
+                resizeMode="contain"
+              />
+            )
           ) : null}
         </View>
       </Modal>
