@@ -50,7 +50,11 @@ export default function RootLayout() {
         <AuthProvider>
           <NavigationGuard />
           <StatusBar style="light" backgroundColor="#000000" />
-          <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+          <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(public)" />
+          </Stack>
         </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>

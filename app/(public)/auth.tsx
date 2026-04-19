@@ -65,6 +65,7 @@ export default function AuthScreen() {
       email,
       password,
       options: {
+        emailRedirectTo: "challengeme:///(tabs)/feed",
         data: {
           username,
           first_name: firstName,
@@ -116,21 +117,6 @@ export default function AuthScreen() {
       setError(translateError(error.message, lang));
     } else {
       setSuccess(label("Email envoyé ! Vérifie ta boîte mail.", "Email sent! Check your inbox."));
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    console.log("[AUTH] Google OAuth press");
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: "challengeme://auth/callback" },
-    });
-    setLoading(false);
-    if (error) {
-      console.log("[AUTH] Google OAuth error:", error.message);
-      setError(translateError(error.message, lang));
     }
   };
 
@@ -215,37 +201,9 @@ export default function AuthScreen() {
               </View>
             )}
 
-            {/* Google OAuth */}
-            {!isForgotPassword && (
-              <>
-                <TouchableOpacity
-                  onPress={handleGoogleSignIn}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                  className="flex-row items-center justify-center bg-muted/50 p-4 rounded-xl border border-border w-full mt-6"
-                >
-                  <View className="w-5 h-5 rounded-full bg-white items-center justify-center mr-3">
-                    <Text className="text-[12px] font-black" style={{ color: "#4285F4" }}>G</Text>
-                  </View>
-                  <Text className="text-sm font-bold text-foreground">
-                    {label("Continuer avec Google", "Continue with Google")}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Separator */}
-                <View className="flex-row items-center my-6 w-full">
-                  <View className="flex-1 h-[1px] bg-border" />
-                  <Text className="mx-4 text-muted-foreground text-xs uppercase">
-                    {label("Ou par email", "Or by email")}
-                  </Text>
-                  <View className="flex-1 h-[1px] bg-border" />
-                </View>
-              </>
-            )}
-
             {/* Sign-up only fields */}
             {isSignUp && !isForgotPassword && (
-              <View className="flex-row gap-3">
+              <View className="flex-row gap-3 mt-6">
                 <View className="flex-1">
                   <Input
                     label={label("Prénom", "First Name")}
@@ -276,7 +234,7 @@ export default function AuthScreen() {
             )}
 
             {/* Email */}
-            <View className={isForgotPassword ? "mt-6" : "mt-5"}>
+            <View className={isSignUp ? "mt-5" : "mt-6"}>
               <Input
                 label="Email"
                 value={email}
@@ -407,9 +365,11 @@ export default function AuthScreen() {
                     resetState();
                   }}
                 >
-                  <Text className="text-xs text-primary font-bold underline">
-                    {isSignUp ? label("Se connecter", "Sign In") : label("S'inscrire", "Sign Up")}
-                  </Text>
+                  <View className="border-b border-primary">
+                    <Text className="text-xs text-primary font-bold">
+                      {isSignUp ? label("Se connecter", "Sign In") : label("S'inscrire", "Sign Up")}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             )}
