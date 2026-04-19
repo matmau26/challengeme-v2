@@ -56,18 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (params.access_token && params.refresh_token) {
         console.log("[AUTH] Token intercepté depuis l'URL ! Configuration de la session...");
-        const { data, error } = await supabase.auth.setSession({
+        const { error } = await supabase.auth.setSession({
           access_token: params.access_token,
           refresh_token: params.refresh_token,
         });
 
         if (error) {
           console.error("[AUTH] Erreur d'injection du token:", error.message);
-        } else if (data.session) {
-          console.log("[AUTH] Session établie via Deep Link ! Mise à jour de l'état React...");
-          setSession(data.session);
-          setUser(data.session.user);
-          setIsLoading(false);
+        } else {
+          console.log("[AUTH] Token validé ! Le listener onAuthStateChange va prendre le relais.");
         }
       }
     };
