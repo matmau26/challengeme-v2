@@ -185,6 +185,7 @@ export default function SettingsScreen() {
     if (!user) return;
     if (!validateUsername(username)) return;
     setSaving(true);
+    await supabase.auth.updateUser({ data: { language: lang } });
     const { error } = await supabase
       .from("users")
       .update({
@@ -195,6 +196,7 @@ export default function SettingsScreen() {
         age_bracket: ageBracket,
         country,
         unit_system: unitSystem,
+        language: lang,
       } as any)
       .eq("id", user.id);
     setSaving(false);
@@ -266,6 +268,7 @@ export default function SettingsScreen() {
               maxLength={20}
               autoCapitalize="none"
               placeholderTextColor="#888888"
+              keyboardAppearance="dark"
               className={`w-full bg-muted rounded-lg px-3 py-2.5 text-sm text-foreground border ${
                 usernameError ? "border-red-500" : "border-border"
               }`}
@@ -286,6 +289,7 @@ export default function SettingsScreen() {
               onChangeText={(v) => setMotto(v.slice(0, 60))}
               placeholder={lang === "fr" ? "Ex: No pain no gain" : "E.g., No pain no gain"}
               placeholderTextColor="#888888"
+              keyboardAppearance="dark"
               maxLength={60}
               className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-foreground"
             />
@@ -298,6 +302,7 @@ export default function SettingsScreen() {
               onChangeText={(v) => setGymName(v.slice(0, 40))}
               placeholder={lang === "fr" ? "Ex: Basic-Fit République" : "E.g., Basic-Fit Republic"}
               placeholderTextColor="#888888"
+              keyboardAppearance="dark"
               maxLength={40}
               autoCapitalize="words"
               className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-foreground"
