@@ -298,12 +298,35 @@ export default function ChallengeDetailScreen() {
       if (error) throw error;
 
       if (opponent) {
-        await supabase.from("notifications").insert({
-          sender_id: user.id,
-          receiver_id: opponent.id,
-          challenge_id: challenge.id,
-          score_to_beat: Math.round(estScore),
-        });
+        const newScoreToBeat = Math.round(estScore);
+        const { data: existingDuel } = await supabase
+          .from("notifications")
+          .select("id, score_to_beat")
+          .eq("sender_id", user.id)
+          .eq("receiver_id", opponent.id)
+          .eq("challenge_id", challenge.id)
+          .maybeSingle();
+
+        if (!existingDuel) {
+          await supabase.from("notifications").insert({
+            sender_id: user.id,
+            receiver_id: opponent.id,
+            challenge_id: challenge.id,
+            score_to_beat: newScoreToBeat,
+          });
+        } else if ((existingDuel.score_to_beat ?? 0) < newScoreToBeat) {
+          await supabase
+            .from("notifications")
+            .update({ score_to_beat: newScoreToBeat })
+            .eq("id", existingDuel.id);
+        } else {
+          Alert.alert(
+            lang === "fr" ? "Défi déjà en attente" : "Challenge already pending",
+            lang === "fr"
+              ? "Ton ami a déjà un défi plus difficile en attente pour cette activité."
+              : "Your friend already has a harder challenge pending for this activity.",
+          );
+        }
       }
 
       submittedChallenges.add(challenge.id);
