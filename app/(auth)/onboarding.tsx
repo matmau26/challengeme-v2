@@ -22,6 +22,7 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { useI18n } from "@/src/lib/i18n";
 import { useInvalidateProfile } from "@/src/hooks/useUserProfile";
 import { type UnitSystem } from "@/src/lib/units";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AGE_BRACKETS = ["19 et -", "20-29", "30-39", "40-49", "50 et +"];
 
@@ -135,10 +136,12 @@ export default function Onboarding() {
   const { lang } = useI18n();
   const { user } = useAuth();
   const invalidateProfile = useInvalidateProfile();
+  const queryClient = useQueryClient();
 
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [motto, setMotto] = useState("");
   const [gymName, setGymName] = useState("");
+  const [gymSuggestions, setGymSuggestions] = useState<string[]>([]);
   const [gender, setGender] = useState("homme");
   const [ageBracket, setAgeBracket] = useState("20-29");
   const [continent, setContinent] = useState("europe");
@@ -149,6 +152,27 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"continent" | "country">("continent");
+
+  const searchGyms = async (text: string) => {
+    setGymName(text.slice(0, 40));
+    if (text.length < 2) {
+      setGymSuggestions([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("users")
+      .select("gym_name")
+      .ilike("gym_name", `%${text}%`)
+      .not("gym_name", "is", null)
+      .limit(5);
+
+    if (data) {
+      const uniqueGyms = Array.from(
+        new Set(data.map((d) => d.gym_name).filter((g): g is string => typeof g === "string" && g.length > 0)),
+      );
+      setGymSuggestions(uniqueGyms);
+    }
+  };
 
   const handlePickPhoto = async () => {
     if (!user) return;
@@ -225,6 +249,7 @@ export default function Onboarding() {
 
       console.log("[ONBOARDING] Profil finalisé avec succès !");
       invalidateProfile();
+      await queryClient.refetchQueries({ queryKey: ["user-profile-data", user.id], exact: true });
       router.replace("/(tabs)/feed");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -307,7 +332,7 @@ export default function Onboarding() {
           <FieldGroup label={lang === "fr" ? "Ma salle de sport" : "My Gym"}>
             <TextInput
               value={gymName}
-              onChangeText={(v) => setGymName(v.slice(0, 40))}
+              onChangeText={searchGyms}
               placeholder={lang === "fr" ? "Ex: Basic-Fit République" : "E.g., Basic-Fit Republic"}
               placeholderTextColor="#888888"
               keyboardAppearance="dark"
@@ -315,6 +340,23 @@ export default function Onboarding() {
               autoCapitalize="words"
               className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-sm text-foreground"
             />
+            {gymSuggestions.length > 0 && (
+              <View className="bg-muted border border-border rounded-lg mt-1 overflow-hidden">
+                {gymSuggestions.map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    onPress={() => {
+                      setGymName(g);
+                      setGymSuggestions([]);
+                    }}
+                    className="px-3 py-2.5 border-b border-border/30"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-sm text-foreground">{g}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             <Text className="text-[10px] text-muted-foreground mt-1 text-right">{gymName.length}/40</Text>
           </FieldGroup>
 
