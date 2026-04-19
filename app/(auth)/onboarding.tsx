@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { Camera, ChevronDown, X } from "lucide-react-native";
 import { supabase } from "@/src/lib/supabase";
@@ -180,25 +182,20 @@ export default function Onboarding() {
       let avatarPublicUrl: string | null = null;
 
       if (avatarUri && !avatarUri.startsWith("http")) {
-        const imageUri = avatarUri;
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-        const fileExt = imageUri.split(".").pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const base64 = await FileSystem.readAsStringAsync(avatarUri, {
+          encoding: "base64" as const,
+        });
+        const fileExt = avatarUri.split(".").pop() || "jpeg";
+        const filePath = `${user.id}-${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from("avatars")
-          .upload(filePath, blob, {
+          .upload(filePath, decode(base64), {
             contentType: `image/${fileExt}`,
             upsert: true,
           });
 
-        if (uploadError) {
-          Alert.alert("Erreur Upload", uploadError.message);
-          setSaving(false);
-          return;
-        }
+        if (uploadError) throw new Error(`Erreur Upload: ${uploadError.message}`);
 
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
         avatarPublicUrl = urlData.publicUrl;
@@ -206,12 +203,11 @@ export default function Onboarding() {
         avatarPublicUrl = avatarUri;
       }
 
-      const { error: langError } = await supabase.auth.updateUser({
+      await supabase.auth.updateUser({
         data: { language: selectedLanguage },
       });
-      if (langError) throw langError;
 
-      const { error: upsertError } = await supabase.from("users").upsert({
+      const { error: dbError } = await supabase.from("users").upsert({
         id: user.id,
         username: user.user_metadata?.username,
         email: user.email,
@@ -225,13 +221,15 @@ export default function Onboarding() {
         cgu_accepted_at: new Date().toISOString(),
         cgu_version: "Avril 2026",
       });
-      if (upsertError) throw upsertError;
+      if (dbError) throw new Error(`Erreur Base de données: ${dbError.message}`);
 
+      console.log("[ONBOARDING] Profil finalisé avec succès !");
       invalidateProfile();
       router.replace("/(tabs)/feed");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert(lang === "fr" ? "Erreur de sauvegarde" : "Save error", message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[ONBOARDING] Erreur critique:", error);
+      Alert.alert(lang === "fr" ? "Erreur" : "Error", message);
     } finally {
       setSaving(false);
     }
