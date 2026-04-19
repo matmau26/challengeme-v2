@@ -19,6 +19,7 @@ import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { Plus, Trophy, Dumbbell } from "lucide-react-native";
 import { UserAvatar } from "@/src/components/UserAvatar";
+import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 
 interface PendingDuel {
   id: string;
@@ -56,6 +57,7 @@ function DifficultyDots({ difficulty, color }: { difficulty: number; color: stri
 export default function FeedScreen() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
+  const { fmt } = useUnitSystem();
   const [activeCategory, setActiveCategory] = useState("all");
   const [gymOnly, setGymOnly] = useState(false);
   const listRef = useRef<FlatList>(null);
@@ -203,8 +205,9 @@ export default function FeedScreen() {
     if (!challenge) return null;
     const safeCategory = challenge.category || "other";
     const catConfig = getCategoryConfig(safeCategory);
-    const title =
+    const rawTitle =
       lang === "en" && challenge.title_en ? challenge.title_en : challenge.title || "Challenge";
+    const title = fmt(rawTitle);
     const slug = slugify(challenge.title);
     const emoji = getCategoryIcon(safeCategory);
     const isCompleted = completedChallengeIds.has(challenge.id);
@@ -317,7 +320,7 @@ export default function FeedScreen() {
           >
             {pendingDuels.map((duel) => {
               const senderName = duel.sender?.username || "Athlete";
-              const challengeTitle = duel.challenge?.title || "Challenge";
+              const challengeTitle = fmt(duel.challenge?.title || "Challenge");
               return (
                 <TouchableOpacity
                   key={duel.id}

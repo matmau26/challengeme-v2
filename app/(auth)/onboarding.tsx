@@ -244,6 +244,7 @@ export default function Onboarding() {
         avatar_url: avatarPublicUrl,
         cgu_accepted_at: new Date().toISOString(),
         cgu_version: "Avril 2026",
+        marketing_opt_in: user.user_metadata?.marketing_opt_in === true,
       });
       if (dbError) throw new Error(`Erreur Base de données: ${dbError.message}`);
 
