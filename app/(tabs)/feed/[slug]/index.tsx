@@ -31,7 +31,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
-import { formatTextUnits, saveWeightToMetric, saveDistanceToMetric } from "@/src/lib/units";
+import { formatTextUnits, formatDynamicUnit, saveWeightToMetric, saveDistanceToMetric } from "@/src/lib/units";
 
 const submittedChallenges = new Set<string>();
 
@@ -558,7 +558,7 @@ export default function ChallengeDetailScreen() {
                           {u?.username || "Athlete"}
                         </Text>
                         <Text className="text-muted-foreground text-xs">
-                          {formatTextUnits(attempt.time_or_reps, unitSystem)}
+                          {formatDynamicUnit(attempt.time_or_reps, unitSystem)}
                         </Text>
                         <Text className="font-bold text-primary text-xs">
                           {attempt.score} XP
@@ -610,6 +610,7 @@ export default function ChallengeDetailScreen() {
                         placeholder="0"
                         placeholderTextColor="#888888"
                         keyboardType="numeric"
+                        keyboardAppearance="dark"
                         className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
                       />
                       <Text className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1.5">
@@ -624,6 +625,7 @@ export default function ChallengeDetailScreen() {
                         placeholder="00"
                         placeholderTextColor="#888888"
                         keyboardType="numeric"
+                        keyboardAppearance="dark"
                         className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
                       />
                       <Text className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1.5">
@@ -638,6 +640,7 @@ export default function ChallengeDetailScreen() {
                     placeholder={isWeight ? (unitSystem === "metric" ? "100" : "220") : isReps ? "25" : "0"}
                     placeholderTextColor="#888888"
                     keyboardType="decimal-pad"
+                    keyboardAppearance="dark"
                     className="bg-muted border border-border rounded-xl px-4 py-3 text-foreground text-xl font-black text-center"
                   />
                 )}
