@@ -302,12 +302,16 @@ export default function Result() {
               {
                 icon: <RefreshCcw size={14} color="#888888" />,
                 label: lang === "fr" ? "R\u00e9essayer" : "Try again",
-                onPress: () => router.back(),
+                onPress: () =>
+                  router.replace({
+                    pathname: "/(tabs)/feed/[slug]",
+                    params: { slug: slug || "", id: id || "" },
+                  }),
               },
               {
                 icon: <ListOrdered size={14} color="#888888" />,
                 label: lang === "fr" ? "Classement" : "Leaderboard",
-                onPress: () => router.push("/(tabs)/leaderboard"),
+                onPress: () => router.navigate("/(tabs)/leaderboard"),
               },
               {
                 icon: <Home size={14} color="#888888" />,

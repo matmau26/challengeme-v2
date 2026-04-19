@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import { supabase } from "@/src/lib/supabase";
+import { useI18n } from "@/src/lib/i18n";
 
 interface AuthContextType {
   session: Session | null;
@@ -18,15 +19,18 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { setLang } = useI18n();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isLanguageSynced, setIsLanguageSynced] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsLoading(false);
+      setIsAuthLoading(false);
+      if (!session?.user) setIsLanguageSynced(true);
     });
 
     const {
@@ -35,11 +39,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AUTH] Changement d'état détecté :", _event);
       setSession(session);
       setUser(session?.user ?? null);
-      setIsLoading(false);
+      setIsAuthLoading(false);
+      if (!session?.user) setIsLanguageSynced(true);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    setIsLanguageSynced(false);
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("language")
+        .eq("id", user.id)
+        .single();
+      if (cancelled) return;
+      const nextLang = (data as { language?: string } | null)?.language;
+      if (nextLang === "fr" || nextLang === "en") setLang(nextLang);
+      setIsLanguageSynced(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, setLang]);
 
   useEffect(() => {
     const handleDeepLink = async (url: string | null) => {
@@ -83,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
   };
+
+  const isLoading = isAuthLoading || (!!user && !isLanguageSynced);
 
   return (
     <AuthContext.Provider value={{ session, user, isLoading, signOut }}>

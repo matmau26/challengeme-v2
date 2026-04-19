@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -62,6 +62,11 @@ export default function ChallengeDetailScreen() {
   const [filterGender, setFilterGender] = useState<"all" | "homme" | "femme">("all");
   const [opponent, setOpponent] = useState<SearchedUser | null>(null);
   const [showOpponentSearch, setShowOpponentSearch] = useState(false);
+
+  useEffect(() => {
+    setUploading(false);
+    setSubmittedThisSession(false);
+  }, []);
 
   const { data: challenge, isLoading: challengeLoading } = useQuery({
     queryKey: ["challenge-detail", id || slug],
