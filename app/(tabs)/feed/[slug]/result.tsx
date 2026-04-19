@@ -307,7 +307,7 @@ export default function Result() {
               {
                 icon: <ListOrdered size={14} color="#888888" />,
                 label: lang === "fr" ? "Classement" : "Leaderboard",
-                onPress: () => router.replace({ pathname: "/(tabs)/leaderboard/" }),
+                onPress: () => router.push("/(tabs)/leaderboard"),
               },
               {
                 icon: <Home size={14} color="#888888" />,
