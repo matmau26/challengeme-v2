@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import { Settings, Camera, LogOut, Crown, ChevronRight } from "lucide-react-native";
 import { supabase } from "@/src/lib/supabase";
@@ -129,11 +128,10 @@ export default function ProfileScreen() {
       const ext = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
       const mimeType = ext === "png" ? "image/png" : "image/jpeg";
       const filePath = `${user.id}/avatar.${ext}`;
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: "base64" as const,
-      });
-      const blob = await (await fetch(`data:${mimeType};base64,${base64}`)).blob();
-      await supabase.storage.from("avatars").upload(filePath, blob, { contentType: mimeType, upsert: true });
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+      await supabase.storage.from("avatars").upload(filePath, arrayBuffer, { contentType: mimeType, upsert: true });
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       const avatarWithTs = `${urlData.publicUrl}?t=${Date.now()}`;
       await supabase.from("users").update({ avatar_url: avatarWithTs }).eq("id", user.id);
@@ -212,15 +210,6 @@ export default function ProfileScreen() {
           {profile?.country ? (
             <Text className="text-xs text-muted-foreground mt-1">{profile.country}</Text>
           ) : null}
-
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/profile/settings")}
-            className="mt-3 px-4 py-1.5 rounded-full border border-border"
-          >
-            <Text className="text-xs font-bold text-muted-foreground">
-              {lang === "fr" ? "Modifier le profil" : "Edit profile"}
-            </Text>
-          </TouchableOpacity>
         </FadeInView>
 
         <FadeInView duration={350} delay={100} style={{ flexDirection: "row", marginBottom: 24 }}>
