@@ -16,8 +16,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.challengeme.proveyourself",
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -46,7 +50,9 @@
       [
         "onesignal-expo-plugin",
         {
-          "mode": "development"
+          "mode": "development",
+          "devTeam": "N8T95UXCS9",
+          "iPhoneDeploymentTarget": "15.1"
         }
       ]
     ],
