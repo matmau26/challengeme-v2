@@ -95,6 +95,7 @@ export default function ChallengeDetailScreen() {
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: ["user-best-scores", user.id] });
         queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user.id] });
+        if (id) queryClient.invalidateQueries({ queryKey: ["user-best-attempt", id, user.id] });
       }
     }, [id, user?.id, queryClient]),
   );
@@ -119,23 +120,23 @@ export default function ChallengeDetailScreen() {
     },
   });
 
+  // `attempts.score` is already XP-normalized via computeScore (higher = better
+  // for every metric, including time via 6000/seconds). No per-challenge sort
+  // direction is needed — always order by score DESC.
   const { data: dbAttempts = [] } = useQuery({
     queryKey: ["challenge-top-attempts", challenge?.id],
     queryFn: async () => {
       if (!challenge) return [];
-      const isLowerBetter = challenge.metric_type === "time";
       const { data, error } = await supabase.rpc("get_challenge_leaderboard", {
         p_challenge_id: challenge.id,
-        p_is_lower_better: isLowerBetter,
+        p_is_lower_better: false,
         p_limit_count: 10,
       });
       if (error) {
         console.error("[LEADERBOARD] rpc error:", error);
         return [];
       }
-      return [...(data || [])].sort((a: any, b: any) =>
-        isLowerBetter ? a.score - b.score : b.score - a.score,
-      );
+      return [...(data || [])].sort((a: any, b: any) => b.score - a.score);
     },
     enabled: !!challenge?.id,
   });
@@ -151,6 +152,23 @@ export default function ChallengeDetailScreen() {
       return count || 0;
     },
     enabled: !!challenge?.id,
+  });
+
+  const { data: userBestAttempt = null } = useQuery({
+    queryKey: ["user-best-attempt", challenge?.id, user?.id],
+    enabled: !!challenge?.id && !!user?.id,
+    queryFn: async () => {
+      if (!challenge?.id || !user?.id) return null;
+      const { data } = await supabase
+        .from("attempts")
+        .select("id, score, time_or_reps, proof_url, created_at")
+        .eq("user_id", user.id)
+        .eq("challenge_id", challenge.id)
+        .order("score", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data || null;
+    },
   });
 
 
@@ -368,6 +386,20 @@ export default function ChallengeDetailScreen() {
       });
 
       if (error) throw error;
+
+      // Feed principal
+      queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["user-best-scores", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["user-best-attempt", challenge.id, user.id] });
+      queryClient.invalidateQueries({ queryKey: ["attempt-counts"] });
+      // Profil de l'utilisateur courant
+      queryClient.invalidateQueries({ queryKey: ["user-profile-data", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["all-attempts-for-live-badges"] });
+      // Leaderboard du défi concerné
+      queryClient.invalidateQueries({ queryKey: ["challenge-top-attempts", challenge.id] });
+      queryClient.invalidateQueries({ queryKey: ["challenge-attempt-count", challenge.id] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard-live-data"] });
 
       if (opponent) {
         const newScoreToBeat = Math.round(estScore);
