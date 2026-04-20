@@ -2,8 +2,11 @@ import { useEffect } from "react";
 import { Stack, useSegments, useRouter, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LogLevel, OneSignal } from "react-native-onesignal";
 import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
 import { I18nProvider } from "@/src/lib/i18n";
+
+const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +41,16 @@ function NavigationGuard() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (!ONESIGNAL_APP_ID) {
+      console.warn("[OneSignal] EXPO_PUBLIC_ONESIGNAL_APP_ID is not set — skipping init.");
+      return;
+    }
+    OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+    OneSignal.initialize(ONESIGNAL_APP_ID);
+    OneSignal.Notifications.requestPermission(true);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>

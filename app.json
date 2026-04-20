@@ -42,6 +42,12 @@
           "cameraPermission": "L'application accède à l'appareil photo pour filmer ou photographier une preuve.",
           "microphonePermission": "L'application accède au micro pour enregistrer l'audio des vidéos."
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
     ],
     "extra": {

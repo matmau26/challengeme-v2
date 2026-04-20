@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
+import { OneSignal, type PushSubscriptionChangedState } from "react-native-onesignal";
 import { supabase } from "@/src/lib/supabase";
 import { useI18n } from "@/src/lib/i18n";
 
@@ -65,6 +66,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [user, setLang]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const syncPushId = async (pushId: string | null | undefined) => {
+      if (!pushId || cancelled) return;
+      const { error } = await supabase
+        .from("users")
+        .update({ onesignal_id: pushId })
+        .eq("id", user.id);
+      if (error) {
+        console.warn("[AUTH] Failed to sync OneSignal pushId:", error.message);
+      }
+    };
+
+    (async () => {
+      try {
+        const pushId = await OneSignal.User.pushSubscription.getIdAsync();
+        await syncPushId(pushId);
+      } catch (err) {
+        console.warn("[AUTH] Unable to read OneSignal pushId:", err);
+      }
+    })();
+
+    const handleChange = (event: PushSubscriptionChangedState) => {
+      syncPushId(event.current?.id);
+    };
+    OneSignal.User.pushSubscription.addEventListener("change", handleChange);
+
+    return () => {
+      cancelled = true;
+      OneSignal.User.pushSubscription.removeEventListener("change", handleChange);
+    };
+  }, [user]);
 
   useEffect(() => {
     const handleDeepLink = async (url: string | null) => {
