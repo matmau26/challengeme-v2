@@ -22,7 +22,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"],
-        "NSLocationWhenInUseUsageDescription": "ChallengeMe peut utiliser votre localisation approximative pour afficher les classements par pays et région."
+        "NSLocationWhenInUseUsageDescription": "ChallengeMe peut utiliser votre localisation approximative pour afficher les classements par pays et région.",
+        "NSCameraUsageDescription": "ChallengeMe utilise l'appareil photo pour capturer votre avatar et les preuves de vos performances.",
+        "NSPhotoLibraryUsageDescription": "ChallengeMe accède à vos photos pour choisir votre avatar et partager vos performances.",
+        "NSPhotoLibraryAddUsageDescription": "ChallengeMe sauvegarde votre ShareCard dans votre galerie photos."
       }
     },
     "android": {
