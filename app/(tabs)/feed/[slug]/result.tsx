@@ -6,13 +6,23 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
-import { ChevronLeft, Crown, Share2 } from "lucide-react-native";
+import {
+  ChevronLeft,
+  Crown,
+  Share2,
+  Trophy,
+  Flame,
+  ThumbsUp,
+  Sprout,
+} from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { useI18n } from "@/src/lib/i18n";
 import {
@@ -28,6 +38,32 @@ import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
 import { ShareCard } from "@/src/components/ShareCard";
 import { useUserProfile } from "@/src/hooks/useUserProfile";
+
+const TIER_PALETTE = {
+  rookie: { primary: "#60A5FA", halo: "#60A5FA", iconColor: "#60A5FA", glow: "#60A5FA" },
+  solid:  { primary: "#00D4FF", halo: "#00D4FF", iconColor: "#00D4FF", glow: "#00D4FF" },
+  beast:  { primary: "#00FF88", halo: "#00FF88", iconColor: "#00FF88", glow: "#00FF88" },
+  elite:  { primary: "#FF6B35", halo: "#FF6B35", iconColor: "#FF6B35", glow: "#FF6B35" },
+  king:   { primary: "#FFD700", halo: "#FFD700", iconColor: "#FFD700", glow: "#FFD700" },
+} as const;
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const renderTierIcon = (badge: string, color: string) => {
+  const props = { size: 18, strokeWidth: 2, color };
+  switch (badge) {
+    case "king":  return <Crown {...props} />;
+    case "elite": return <Trophy {...props} />;
+    case "beast": return <Flame {...props} />;
+    case "solid": return <ThumbsUp {...props} />;
+    default:      return <Sprout {...props} />;
+  }
+};
 
 export default function Result() {
   const { slug, id, value, metric, unit } = useLocalSearchParams<{
@@ -47,6 +83,10 @@ export default function Result() {
   const { data: profile } = useUserProfile();
   const shareCardRef = useRef<View>(null);
 
+  const scoreScale = useRef(new Animated.Value(0.5)).current;
+  const haloOpacity = useRef(new Animated.Value(0.4)).current;
+  const ctaScale = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
     queryClient.invalidateQueries({ queryKey: ["user-attempts-set", user?.id] });
@@ -57,6 +97,58 @@ export default function Result() {
       queryClient.invalidateQueries({ queryKey: ["challenge-attempt-count", id] });
     }
   }, [queryClient, user?.id, id]);
+
+  useEffect(() => {
+    Animated.spring(scoreScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 80,
+      useNativeDriver: true,
+    }).start();
+  }, [scoreScale]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(haloOpacity, {
+          toValue: 0.7,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(haloOpacity, {
+          toValue: 0.4,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [haloOpacity]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ctaScale, {
+          toValue: 1.02,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(ctaScale, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [ctaScale]);
+
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
 
@@ -110,6 +202,7 @@ export default function Result() {
   const percentileValue = (betterCount / totalAttempts) * 100;
   const badge = getBadge(percentileValue);
   const isKing = badge === "king" && rank === 1;
+  const palette = TIER_PALETTE[badge as keyof typeof TIER_PALETTE] || TIER_PALETTE.rookie;
 
   const title = challenge
     ? formatTextUnits(
@@ -159,7 +252,6 @@ export default function Result() {
   }
 
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
-  const scoreColor = isKing ? "#FFD700" : "#00FF88";
   const handleRetry = () => {
     if (router.canDismiss()) router.dismiss();
     else router.back();
@@ -243,49 +335,64 @@ export default function Result() {
           >
             <View
               style={{
-                width: 280,
-                height: 200,
+                width: 320,
+                height: 240,
                 alignItems: "center",
                 justifyContent: "center",
+                overflow: "visible",
+                marginVertical: 24,
               }}
             >
-              <Svg
-                width={280}
-                height={200}
-                viewBox="0 0 280 200"
-                style={{ position: "absolute", top: 0, left: 0 }}
+              <Animated.View
+                style={{
+                  opacity: haloOpacity,
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: 320,
+                  height: 240,
+                }}
                 pointerEvents="none"
               >
-                <Defs>
-                  <RadialGradient
-                    id="scoreHalo"
-                    cx="50%"
-                    cy="50%"
-                    r="50%"
-                  >
-                    <Stop offset="0%" stopColor={scoreColor} stopOpacity={0.4} />
-                    <Stop offset="50%" stopColor={scoreColor} stopOpacity={0.1} />
-                    <Stop offset="100%" stopColor={scoreColor} stopOpacity={0} />
-                  </RadialGradient>
-                </Defs>
-                <Rect x="0" y="0" width="280" height="200" fill="url(#scoreHalo)" />
-              </Svg>
-              <Text
-                style={{
-                  fontFamily: "Poppins_800ExtraBold",
-                  fontSize: 140,
-                  lineHeight: 160,
-                  letterSpacing: -6,
-                  color: scoreColor,
-                  textAlign: "center",
-                  textShadowColor: scoreColor,
-                  textShadowOffset: { width: 0, height: 0 },
-                  textShadowRadius: isKing ? 30 : 20,
-                  includeFontPadding: false,
-                }}
-              >
-                {displayScore}
-              </Text>
+                <Svg
+                  width={320}
+                  height={240}
+                  viewBox="0 0 320 240"
+                  pointerEvents="none"
+                >
+                  <Defs>
+                    <RadialGradient
+                      id="scoreHalo"
+                      cx="50%"
+                      cy="50%"
+                      r="50%"
+                    >
+                      <Stop offset="0%" stopColor={palette.halo} stopOpacity={1} />
+                      <Stop offset="50%" stopColor={palette.halo} stopOpacity={0.25} />
+                      <Stop offset="100%" stopColor={palette.halo} stopOpacity={0} />
+                    </RadialGradient>
+                  </Defs>
+                  <Rect x="0" y="0" width="320" height="240" fill="url(#scoreHalo)" />
+                </Svg>
+              </Animated.View>
+              <Animated.View style={{ transform: [{ scale: scoreScale }] }}>
+                <Text
+                  style={{
+                    fontFamily: "Poppins_800ExtraBold",
+                    fontSize: 140,
+                    lineHeight: 160,
+                    letterSpacing: -6,
+                    color: palette.primary,
+                    textAlign: "center",
+                    textShadowColor: palette.glow,
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 24,
+                    includeFontPadding: false,
+                  }}
+                >
+                  {displayScore}
+                </Text>
+              </Animated.View>
             </View>
             <Text
               style={{
@@ -309,13 +416,13 @@ export default function Result() {
             {isKing ? (
               <View style={{ alignItems: "center" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Crown size={20} color="#FFD700" />
+                  <Crown size={20} color={palette.primary} />
                   <Text
                     style={{
                       fontFamily: "Poppins_800ExtraBold",
                       fontSize: 24,
                       letterSpacing: 8,
-                      color: "#FFD700",
+                      color: palette.primary,
                     }}
                   >
                     KING
@@ -326,7 +433,7 @@ export default function Result() {
                     fontFamily: "Poppins_500Medium",
                     fontSize: 10,
                     letterSpacing: 6,
-                    color: "#FFD700",
+                    color: palette.primary,
                     opacity: 0.7,
                     marginTop: 6,
                   }}
@@ -339,32 +446,26 @@ export default function Result() {
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
+                  paddingVertical: 12,
                   paddingHorizontal: 24,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: "#1A1A1A",
-                  borderWidth: 1,
-                  borderColor: "#3A4540",
+                  borderRadius: 24,
+                  backgroundColor: hexToRgba(palette.primary, 0.08),
+                  borderWidth: 1.5,
+                  borderColor: hexToRgba(palette.primary, 0.25),
+                  gap: 10,
                 }}
               >
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: "#7A8580",
-                    marginRight: 12,
-                  }}
-                />
+                {renderTierIcon(badge, palette.primary)}
                 <Text
                   style={{
                     fontFamily: "Poppins_700Bold",
-                    fontSize: 13,
+                    fontSize: 15,
                     letterSpacing: 4,
-                    color: "#A8B0AC",
+                    color: palette.primary,
+                    textTransform: "uppercase",
                   }}
                 >
-                  {badge.toUpperCase()}
+                  {badge}
                 </Text>
               </View>
             )}
@@ -422,7 +523,9 @@ export default function Result() {
                 borderRadius: 20,
                 backgroundColor: "rgba(255,255,255,0.05)",
                 borderWidth: isKing ? 1.5 : 1,
-                borderColor: isKing ? "rgba(255,215,0,0.4)" : "rgba(255,255,255,0.08)",
+                borderColor: isKing
+                  ? hexToRgba(palette.primary, 0.4)
+                  : "rgba(255,255,255,0.08)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -444,7 +547,7 @@ export default function Result() {
                   fontFamily: "Poppins_800ExtraBold",
                   fontSize: 26,
                   letterSpacing: -1,
-                  color: isKing ? "#FFD700" : "#FFFFFF",
+                  color: isKing ? palette.primary : "#FFFFFF",
                 }}
                 numberOfLines={1}
                 adjustsFontSizeToFit
@@ -456,52 +559,65 @@ export default function Result() {
           </FadeInView>
 
           <FadeInView duration={400} delay={400}>
-            <TouchableOpacity
-              onPress={handleShare}
-              activeOpacity={0.85}
-              style={{
-                width: "100%",
-                paddingVertical: 18,
-                borderRadius: 30,
-                backgroundColor: scoreColor,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                shadowColor: scoreColor,
-                shadowOpacity: 0.4,
-                shadowRadius: 16,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 8,
-                marginBottom: 16,
-              }}
-            >
-              <Share2 size={18} color="#000000" />
-              <Text
+            <Animated.View style={{ transform: [{ scale: ctaScale }], width: "100%" }}>
+              <TouchableOpacity
+                onPress={handleShare}
+                activeOpacity={0.85}
                 style={{
-                  fontFamily: "Poppins_800ExtraBold",
-                  fontSize: 16,
-                  color: "#000000",
+                  width: "100%",
+                  paddingVertical: 18,
+                  borderRadius: 30,
+                  backgroundColor: palette.primary,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  shadowColor: palette.primary,
+                  shadowOpacity: 0.4,
+                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 8,
                 }}
               >
-                {lang === "fr" ? "Partager ma performance" : "Share my performance"}
-              </Text>
-            </TouchableOpacity>
+                <Share2 size={18} color="#000000" />
+                <Text
+                  style={{
+                    fontFamily: "Poppins_800ExtraBold",
+                    fontSize: 16,
+                    color: "#000000",
+                  }}
+                >
+                  {lang === "fr" ? "Partager ma performance" : "Share my performance"}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             <TouchableOpacity
               onPress={handleRetry}
               activeOpacity={0.7}
-              style={{ alignSelf: "center", paddingVertical: 8 }}
+              style={{
+                width: "100%",
+                paddingVertical: 16,
+                borderRadius: 28,
+                borderWidth: 1.5,
+                borderColor: hexToRgba(palette.primary, 0.4),
+                backgroundColor: "transparent",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+                marginTop: 12,
+              }}
             >
               <Text
                 style={{
-                  fontFamily: "Poppins_500Medium",
-                  fontSize: 14,
-                  color: "#7A8580",
-                  textAlign: "center",
+                  fontFamily: "Poppins_600SemiBold",
+                  fontSize: 15,
+                  color: palette.primary,
+                  letterSpacing: 0,
                 }}
               >
-                {lang === "fr" ? "Réessayer ce défi →" : "Try again →"}
+                {lang === "fr" ? "Réessayer ce défi" : "Try again"}
               </Text>
             </TouchableOpacity>
           </FadeInView>
