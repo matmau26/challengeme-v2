@@ -12,12 +12,10 @@ import { useLocalSearchParams, router, Redirect } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
-import {
-  Trophy, Share2, RefreshCcw, Home, Crown, Flame, ThumbsUp, Sprout, ListOrdered,
-} from "lucide-react-native";
+import { ChevronLeft, Crown, Share2 } from "lucide-react-native";
+import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { useI18n } from "@/src/lib/i18n";
 import {
-  BADGE_CONFIG,
   getBadge,
   formatValue,
   computeScore,
@@ -30,25 +28,6 @@ import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
 import { ShareCard } from "@/src/components/ShareCard";
 import { useUserProfile } from "@/src/hooks/useUserProfile";
-
-const renderBadgeIcon = (badge: string, color: string) => {
-  const props = { size: 52, strokeWidth: 1.5, color };
-  switch (badge) {
-    case "king":  return <Crown {...props} />;
-    case "elite": return <Trophy {...props} />;
-    case "beast": return <Flame {...props} />;
-    case "solid": return <ThumbsUp {...props} />;
-    default:      return <Sprout {...props} />;
-  }
-};
-
-const getBadgeMotivation = (badge: string, lang: string): string => {
-  if (badge === "king") return lang === "fr" ? "TU ES N\u00b01 MONDIAL. D\u00c9FENDS TON TR\u00d4NE." : "YOU ARE #1 WORLDWIDE. DEFEND YOUR THRONE.";
-  if (badge === "elite") return lang === "fr" ? "TOP 10% MONDIAL. Tu domines. Partage-le." : "TOP 10% WORLDWIDE. You dominate. Share it.";
-  if (badge === "beast") return lang === "fr" ? "TOP 30%. Solide. La prochaine fois tu vises Elite." : "TOP 30%. Solid. Next time aim for Elite.";
-  if (badge === "solid") return lang === "fr" ? "Bien jou\u00e9. Tu progresses. Reviens t'am\u00e9liorer." : "Good job. Keep improving. Come back for more.";
-  return lang === "fr" ? "Premier essai. Continue, tout le monde commence quelque part." : "First try. Keep going, everyone starts somewhere.";
-};
 
 export default function Result() {
   const { slug, id, value, metric, unit } = useLocalSearchParams<{
@@ -130,18 +109,7 @@ export default function Result() {
   const rank = betterCount + 1;
   const percentileValue = (betterCount / totalAttempts) * 100;
   const badge = getBadge(percentileValue);
-  const badgeConfig = BADGE_CONFIG[badge];
-  const isKing = badge === "king";
-  const isElite = badge === "elite";
-  const percentileDisplay = Math.max(1, Math.ceil(100 - percentileValue)).toString();
-
-  const badgeColor = {
-    king: "#EAB308",
-    elite: "#F59E0B",
-    beast: "#00FF87",
-    solid: "#60A5FA",
-    rookie: "#9CA3AF",
-  }[badge] || "#00FF87";
+  const isKing = badge === "king" && rank === 1;
 
   const title = challenge
     ? formatTextUnits(
@@ -182,7 +150,7 @@ export default function Result() {
   if (challengeLoading || !challenge) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator color="#00FF87" size="large" />
+        <ActivityIndicator color="#00FF88" size="large" />
         <Text className="text-muted-foreground text-sm mt-4">
           {lang === "fr" ? "Chargement de ton exploit..." : "Loading your performance..."}
         </Text>
@@ -190,9 +158,11 @@ export default function Result() {
     );
   }
 
-  const goToTab = (href: "/(tabs)/leaderboard" | "/(tabs)/feed") => {
-    if (router.canDismiss()) router.dismissAll();
-    router.navigate(href);
+  const displayScore = Math.max(1, Math.min(100, Math.round(score)));
+  const scoreColor = isKing ? "#FFD700" : "#00FF88";
+  const handleRetry = () => {
+    if (router.canDismiss()) router.dismiss();
+    else router.back();
   };
 
   return (
@@ -214,6 +184,18 @@ export default function Result() {
           badge={badge}
         />
       </View>
+
+      <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 }}>
+        <TouchableOpacity
+          onPress={handleRetry}
+          activeOpacity={0.7}
+          hitSlop={12}
+          style={{ alignSelf: "flex-start", padding: 4 }}
+        >
+          <ChevronLeft size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -221,179 +203,309 @@ export default function Result() {
           justifyContent: "center",
           alignItems: "center",
           paddingHorizontal: 24,
-          paddingVertical: 24,
+          paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
       >
-       <View className="w-full max-w-md items-stretch">
-        {/* Challenge header */}
-        <FadeInView duration={400} className="items-center mb-4">
-          <View className="px-3 py-0.5 rounded-full bg-muted/50 border border-border mb-2">
-            <Text className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              {lang === "fr" ? "D\u00e9fi Termin\u00e9" : "Challenge Completed"}
-            </Text>
-          </View>
-          <Text
-            className="text-xl font-black text-foreground text-center uppercase italic"
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-        </FadeInView>
-
-        {/* Badge hero */}
-        <FadeInView duration={500} delay={100} className="items-center mb-4">
-          <View
-            className={`p-4 rounded-full border-4 items-center justify-center ${
-              isKing ? "border-[#EAB308]" : isElite ? "border-[#F59E0B]" : "border-border"
-            }`}
-            style={{ backgroundColor: "#0F0F0F" }}
-          >
-            {renderBadgeIcon(badge, badgeColor)}
-          </View>
-          <View
-            style={{
-              backgroundColor: isKing ? "#EAB308" : "transparent",
-              borderWidth: 1.5,
-              borderColor: badgeColor,
-              paddingVertical: 3,
-              paddingHorizontal: 14,
-              borderRadius: 20,
-              marginTop: -8,
-            }}
-          >
+        <View style={{ width: "100%", maxWidth: 480, alignItems: "stretch" }}>
+          <FadeInView duration={400} style={{ alignItems: "center", marginBottom: 32 }}>
             <Text
               style={{
-                fontSize: 10,
-                fontWeight: "900",
-                color: isKing ? "#000" : badgeColor,
+                fontFamily: "Poppins_500Medium",
+                fontSize: 12,
+                letterSpacing: 8,
+                color: "#7A8580",
                 textTransform: "uppercase",
-                letterSpacing: 2,
+                marginBottom: 12,
               }}
             >
-              {lang === "fr" ? badgeConfig.label_fr : badgeConfig.label_en}
+              {lang === "fr" ? "Défi" : "Challenge"}
             </Text>
-          </View>
-        </FadeInView>
-
-        {/* Score */}
-        <FadeInView duration={400} delay={200} className="items-center mb-4">
-          <Text
-            style={{
-              fontSize: 80,
-              fontWeight: "900",
-              color: "#FFFFFF",
-              lineHeight: 80,
-              letterSpacing: -3,
-            }}
-          >
-            {score.toLocaleString()}
-          </Text>
-          <View className="flex-row items-center gap-2 mt-6">
-            <View style={{ width: 24, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
-            <Text className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              XP Points
-            </Text>
-            <View style={{ width: 24, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
-          </View>
-        </FadeInView>
-
-        {/* Stats */}
-        <FadeInView duration={400} delay={300} className="w-full flex-row gap-2 mb-4">
-          {[
-            { label: "Performance", value: displayValue },
-            { label: lang === "fr" ? "Rang Mondial" : "World Rank", value: `#${rank}` },
-          ].map((s, i) => (
-            <View
-              key={i}
-              className="flex-1 bg-card/60 border border-border py-4 px-3 rounded-2xl items-center"
+            <Text
+              style={{
+                fontFamily: "Poppins_800ExtraBold",
+                fontSize: 28,
+                letterSpacing: -1,
+                color: "#FFFFFF",
+                textAlign: "center",
+                textTransform: "uppercase",
+              }}
+              numberOfLines={2}
             >
-              <Text className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                {s.label}
-              </Text>
-              <Text className="text-lg font-black text-primary italic" numberOfLines={1}>
-                {s.value}
+              {title}
+            </Text>
+          </FadeInView>
+
+          <FadeInView
+            duration={500}
+            delay={100}
+            style={{ alignItems: "center", marginBottom: 24 }}
+          >
+            <View
+              style={{
+                width: 280,
+                height: 200,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Svg
+                width={280}
+                height={200}
+                viewBox="0 0 280 200"
+                style={{ position: "absolute", top: 0, left: 0 }}
+                pointerEvents="none"
+              >
+                <Defs>
+                  <RadialGradient
+                    id="scoreHalo"
+                    cx="50%"
+                    cy="50%"
+                    r="50%"
+                  >
+                    <Stop offset="0%" stopColor={scoreColor} stopOpacity={0.4} />
+                    <Stop offset="50%" stopColor={scoreColor} stopOpacity={0.1} />
+                    <Stop offset="100%" stopColor={scoreColor} stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Rect x="0" y="0" width="280" height="200" fill="url(#scoreHalo)" />
+              </Svg>
+              <Text
+                style={{
+                  fontFamily: "Poppins_800ExtraBold",
+                  fontSize: 140,
+                  lineHeight: 160,
+                  letterSpacing: -6,
+                  color: scoreColor,
+                  textAlign: "center",
+                  textShadowColor: scoreColor,
+                  textShadowOffset: { width: 0, height: 0 },
+                  textShadowRadius: isKing ? 30 : 20,
+                  includeFontPadding: false,
+                }}
+              >
+                {displayScore}
               </Text>
             </View>
-          ))}
-        </FadeInView>
-
-        {/* Motivation */}
-        <FadeInView duration={400} delay={400} className="items-center mb-6 px-4">
-          <Text
-            className="text-[10px] font-black uppercase tracking-widest text-center leading-relaxed"
-            style={{ color: isKing ? "#EAB308" : isElite ? "#F59E0B" : "#888888" }}
-          >
-            {getBadgeMotivation(badge, lang)}
-          </Text>
-          {!isKing && (
-            <Text className="text-[10px] text-muted-foreground mt-1">
-              {lang === "fr" ? "Top " : "Top "}
-              <Text className="text-primary font-black">{percentileDisplay}%</Text>
-              {lang === "fr" ? " des athl\u00e8tes mondiaux" : " of worldwide athletes"}
+            <Text
+              style={{
+                fontFamily: "Poppins_500Medium",
+                fontSize: 11,
+                letterSpacing: 6,
+                color: "#7A8580",
+                textTransform: "uppercase",
+                marginTop: 8,
+              }}
+            >
+              Score / 100
             </Text>
-          )}
-        </FadeInView>
+          </FadeInView>
 
-        {/* Action buttons */}
-        <FadeInView duration={400} delay={500} className="w-full gap-3">
-          <TouchableOpacity
-            onPress={handleShare}
-            activeOpacity={0.85}
-            className="w-full py-5 rounded-2xl bg-orange-500 flex-row items-center justify-center gap-2"
-            style={{
-              shadowColor: "#F97316",
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 6,
-            }}
+          <FadeInView
+            duration={400}
+            delay={200}
+            style={{ alignItems: "center", marginBottom: 24 }}
           >
-            <Share2 size={20} color="#000" />
-            <Text className="text-black font-black text-base uppercase tracking-wide">
-              {lang === "fr" ? "Partager ma performance" : "Share my performance"}
-            </Text>
-          </TouchableOpacity>
-
-          <View className="flex-row w-full justify-between gap-2">
-            {[
-              {
-                icon: <RefreshCcw size={14} color="#888888" />,
-                label: lang === "fr" ? "R\u00e9essayer" : "Try again",
-                onPress: () => {
-                  if (router.canDismiss()) router.dismiss();
-                  else router.back();
-                },
-              },
-              {
-                icon: <ListOrdered size={14} color="#888888" />,
-                label: lang === "fr" ? "Classement" : "Leaderboard",
-                onPress: () => goToTab("/(tabs)/leaderboard"),
-              },
-              {
-                icon: <Home size={14} color="#888888" />,
-                label: lang === "fr" ? "Accueil" : "Home",
-                onPress: () => goToTab("/(tabs)/feed"),
-              },
-            ].map((btn, i) => (
-              <TouchableOpacity
-                key={i}
-                onPress={btn.onPress}
-                className="flex-1 py-3 px-2 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-2"
-              >
-                {btn.icon}
+            {isKing ? (
+              <View style={{ alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Crown size={20} color="#FFD700" />
+                  <Text
+                    style={{
+                      fontFamily: "Poppins_800ExtraBold",
+                      fontSize: 24,
+                      letterSpacing: 8,
+                      color: "#FFD700",
+                    }}
+                  >
+                    KING
+                  </Text>
+                </View>
                 <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  className="text-muted-foreground font-bold text-[10px] uppercase"
+                  style={{
+                    fontFamily: "Poppins_500Medium",
+                    fontSize: 10,
+                    letterSpacing: 6,
+                    color: "#FFD700",
+                    opacity: 0.7,
+                    marginTop: 6,
+                  }}
                 >
-                  {btn.label}
+                  {lang === "fr" ? "— #1 Mondial —" : "— #1 Worldwide —"}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </FadeInView>
-       </View>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 24,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: "#1A1A1A",
+                  borderWidth: 1,
+                  borderColor: "#3A4540",
+                }}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: "#7A8580",
+                    marginRight: 12,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Poppins_700Bold",
+                    fontSize: 13,
+                    letterSpacing: 4,
+                    color: "#A8B0AC",
+                  }}
+                >
+                  {badge.toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </FadeInView>
+
+          <FadeInView
+            duration={400}
+            delay={300}
+            style={{ flexDirection: "row", gap: 12, width: "100%", marginBottom: 32 }}
+          >
+            <View
+              style={{
+                flex: 1,
+                paddingVertical: 24,
+                paddingHorizontal: 16,
+                borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.05)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.08)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Poppins_600SemiBold",
+                  fontSize: 10,
+                  letterSpacing: 3,
+                  color: "#7A8580",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                {lang === "fr" ? "Performance" : "Performance"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Poppins_800ExtraBold",
+                  fontSize: 26,
+                  letterSpacing: -1,
+                  color: "#FFFFFF",
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {displayValue}
+              </Text>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                paddingVertical: 24,
+                paddingHorizontal: 16,
+                borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.05)",
+                borderWidth: isKing ? 1.5 : 1,
+                borderColor: isKing ? "rgba(255,215,0,0.4)" : "rgba(255,255,255,0.08)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Poppins_600SemiBold",
+                  fontSize: 10,
+                  letterSpacing: 3,
+                  color: "#7A8580",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                {lang === "fr" ? "Rang Mondial" : "World Rank"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Poppins_800ExtraBold",
+                  fontSize: 26,
+                  letterSpacing: -1,
+                  color: isKing ? "#FFD700" : "#FFFFFF",
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                #{rank}
+              </Text>
+            </View>
+          </FadeInView>
+
+          <FadeInView duration={400} delay={400}>
+            <TouchableOpacity
+              onPress={handleShare}
+              activeOpacity={0.85}
+              style={{
+                width: "100%",
+                paddingVertical: 18,
+                borderRadius: 30,
+                backgroundColor: scoreColor,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                shadowColor: scoreColor,
+                shadowOpacity: 0.4,
+                shadowRadius: 16,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 8,
+                marginBottom: 16,
+              }}
+            >
+              <Share2 size={18} color="#000000" />
+              <Text
+                style={{
+                  fontFamily: "Poppins_800ExtraBold",
+                  fontSize: 16,
+                  color: "#000000",
+                }}
+              >
+                {lang === "fr" ? "Partager ma performance" : "Share my performance"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleRetry}
+              activeOpacity={0.7}
+              style={{ alignSelf: "center", paddingVertical: 8 }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Poppins_500Medium",
+                  fontSize: 14,
+                  color: "#7A8580",
+                  textAlign: "center",
+                }}
+              >
+                {lang === "fr" ? "Réessayer ce défi →" : "Try again →"}
+              </Text>
+            </TouchableOpacity>
+          </FadeInView>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
