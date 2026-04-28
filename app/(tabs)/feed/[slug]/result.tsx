@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
-// import { captureRef } from "react-native-view-shot"; // Disabled on Expo Go (missing native module RNViewShot)
-// import * as Sharing from "expo-sharing";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import { FadeInView } from "@/src/components/ui/FadeInView";
 import {
   Trophy, Share2, RefreshCcw, Home, Crown, Flame, ThumbsUp, Sprout, ListOrdered,
@@ -28,7 +28,8 @@ import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
-// import { ShareCard } from "@/src/components/ShareCard"; // Disabled on Expo Go
+import { ShareCard } from "@/src/components/ShareCard";
+import { useUserProfile } from "@/src/hooks/useUserProfile";
 
 const renderBadgeIcon = (badge: string, color: string) => {
   const props = { size: 52, strokeWidth: 1.5, color };
@@ -64,6 +65,8 @@ export default function Result() {
   const { unitSystem } = useUnitSystem();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: profile } = useUserProfile();
+  const shareCardRef = useRef<View>(null);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
@@ -148,12 +151,32 @@ export default function Result() {
     : "";
 
   const handleShare = async () => {
-    // Native share disabled in Expo Go (RNViewShot native module unavailable).
-    console.log("Partage natif désactivé sur Expo Go");
-    Alert.alert(
-      lang === "fr" ? "Partage" : "Share",
-      lang === "fr" ? "Bientôt disponible" : "Coming soon",
-    );
+    try {
+      if (!shareCardRef.current) return;
+      const uri = await captureRef(shareCardRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          lang === "fr"
+            ? "Le partage n'est pas pris en charge sur cet appareil."
+            : "Sharing is not supported on this device.",
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "image/png",
+        dialogTitle: lang === "fr" ? "Partager ma performance" : "Share my performance",
+      });
+    } catch (err) {
+      console.warn("Share failed", err);
+      Alert.alert(
+        lang === "fr" ? "Erreur" : "Error",
+        lang === "fr" ? "Impossible de partager pour le moment." : "Unable to share right now.",
+      );
+    }
   };
 
   if (challengeLoading || !challenge) {
@@ -174,7 +197,23 @@ export default function Result() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top", "bottom"]}>
-      {/* Hidden ShareCard capture disabled on Expo Go (RNViewShot native module unavailable). */}
+      <View
+        style={{ position: "absolute", left: -10000, top: -10000 }}
+        pointerEvents="none"
+        collapsable={false}
+      >
+        <ShareCard
+          ref={shareCardRef}
+          locale={lang}
+          username={profile?.username || ""}
+          avatarUrl={profile?.avatar_url || undefined}
+          challengeName={title}
+          score={score}
+          performance={displayValue}
+          rank={rank}
+          badge={badge}
+        />
+      </View>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
