@@ -294,7 +294,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
       )}
 
       <View style={styles.scoreSection}>
-        <View style={[styles.scoreContainer, { height: scoreFontSize }]}>
+        <View style={[styles.scoreContainer, { height: scoreLineHeight }]}>
           <Text
             style={[
               styles.scoreText,
@@ -307,9 +307,6 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
                 textShadowRadius: scoreGlowRadius,
               },
             ]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
           >
             {displayScore}
           </Text>
@@ -531,6 +528,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "visible",
   },
   scoreText: {
     fontFamily: "Poppins_800ExtraBold",
