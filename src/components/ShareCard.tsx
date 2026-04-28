@@ -1,7 +1,6 @@
 import { forwardRef } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import MaskedView from "@react-native-masked-view/masked-view";
 import Svg, {
   Defs,
   RadialGradient,
@@ -302,8 +301,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
               {
                 fontSize: scoreFontSize,
                 lineHeight: scoreLineHeight,
-                color: THEME.haloColor,
-                opacity: 0.35,
+                color: THEME.scoreColorMid,
                 textShadowColor: THEME.haloColor,
                 textShadowOffset: { width: 0, height: 0 },
                 textShadowRadius: scoreGlowRadius,
@@ -315,34 +313,6 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
           >
             {displayScore}
           </Text>
-          <View style={StyleSheet.absoluteFill}>
-            <MaskedView
-              maskElement={
-                <View style={styles.scoreContainer}>
-                  <Text
-                    style={[
-                      styles.scoreText,
-                      {
-                        fontSize: scoreFontSize,
-                        lineHeight: scoreLineHeight,
-                        color: "#000",
-                      },
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}
-                  >
-                    {displayScore}
-                  </Text>
-                </View>
-              }
-            >
-              <LinearGradient
-                colors={[THEME.scoreColorFrom, THEME.scoreColorMid, THEME.scoreColorTo]}
-                style={{ flex: 1 }}
-              />
-            </MaskedView>
-          </View>
         </View>
         <Text style={[styles.scoreLabel, { color: THEME.textMuted }]}>{t.scoreLabel}</Text>
       </View>
