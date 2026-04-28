@@ -22,12 +22,29 @@ export function avatarWithCache(url: string | null | undefined, gender?: string 
   return String(url);
 }
 
+export interface UserProfile {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+  language: 'fr' | 'en';
+  email: string | null;
+  onesignal_id: string | null;
+  cgu_accepted_at: string | null;
+  cgu_version: string | null;
+  marketing_opt_in: boolean | null;
+  unit_system: 'metric' | 'imperial' | null;
+  gender: string | null;
+  mantra: string | null;
+  country: string | null;
+  age_bracket: string | null;
+}
+
 export function useUserProfile() {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: ["user-profile-data", user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("users")
@@ -35,7 +52,7 @@ export function useUserProfile() {
         .eq("id", user.id)
         .single();
       if (error) return null;
-      return data;
+      return data as UserProfile;
     },
     enabled: !!user?.id,
     staleTime: 30_000,
