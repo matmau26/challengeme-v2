@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, setLang]);
+  }, [user?.id, setLang]);
 
   useEffect(() => {
     if (!user) return;
