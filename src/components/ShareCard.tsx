@@ -212,8 +212,8 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
   const safeUser = (username && username.trim()) || t.fallbackUser;
   const initial = safeUser.charAt(0).toUpperCase() || "?";
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
-  const scoreFontSize = isKing ? 460 : 500;
-  const scoreLineHeight = isKing ? 540 : 600;
+  const scoreFontSize = isKing ? 380 : 500;
+  const scoreLineHeight = isKing ? 460 : 600;
   const scoreGlowRadius = isKing ? 14 : 12;
   const haloCY = isKing ? 950 : 900;
   const haloMid = THEME.haloOpacity * 0.4;
@@ -345,32 +345,40 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
           </Text>
         </View>
       </View>
-      <Text style={[styles.scoreLabel, { color: THEME.textMuted }]}>{t.scoreLabel}</Text>
+      <Text
+        style={[
+          styles.scoreLabel,
+          { top: isKing ? 1460 : 1280, color: THEME.textMuted },
+        ]}
+      >
+        {t.scoreLabel}
+      </Text>
 
-      {(() => {
-        const egoBait = getEgoBait(badge, locale);
-        return (
-          <View style={styles.egoBaitBlock}>
-            <Text style={[styles.egoBaitLine, { color: THEME.textPrimary }]}>
-              {egoBait.line1}
-            </Text>
-            <Text
-              style={[
-                styles.egoBaitLine,
-                styles.egoBaitAccent,
-                {
-                  color: THEME.scoreColorMid,
-                  textShadowColor: THEME.haloColor,
-                },
-              ]}
-            >
-              {egoBait.line2}
-            </Text>
-          </View>
-        );
-      })()}
+      {!isKing &&
+        (() => {
+          const egoBait = getEgoBait(badge, locale);
+          return (
+            <View style={styles.egoBaitBlock}>
+              <Text style={[styles.egoBaitLine, { color: THEME.textPrimary }]}>
+                {egoBait.line1}
+              </Text>
+              <Text
+                style={[
+                  styles.egoBaitLine,
+                  styles.egoBaitAccent,
+                  {
+                    color: THEME.scoreColorMid,
+                    textShadowColor: THEME.haloColor,
+                  },
+                ]}
+              >
+                {egoBait.line2}
+              </Text>
+            </View>
+          );
+        })()}
 
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { top: isKing ? 1490 : 1510 }]}>
         <View style={[styles.statCard, { borderColor: THEME.borderSubtle }]}>
           <Text style={[styles.statLabel, { color: THEME.textMuted }]}>{t.statPerformance}</Text>
           <Text
@@ -637,7 +645,7 @@ const styles = StyleSheet.create({
   },
   footerUrl: {
     position: "absolute",
-    bottom: 250,
+    bottom: 180,
     left: 0,
     right: 0,
     fontFamily: "Poppins_600SemiBold",

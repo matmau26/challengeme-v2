@@ -512,10 +512,11 @@ export default function Result() {
             )}
           </FadeInView>
 
-          {(() => {
-            const egoBait = getEgoBait(badge, lang);
-            return (
-              <FadeInView duration={400} delay={250}>
+          {!isKing &&
+            (() => {
+              const egoBait = getEgoBait(badge, lang);
+              return (
+                <FadeInView duration={400} delay={250}>
                 <View
                   style={{
                     width: "100%",
