@@ -62,8 +62,6 @@ const TRANSLATIONS = {
     headerTag: "a posé sa marque.",
     challengeLabel: "DÉFI",
     scoreLabel: "SCORE / 100",
-    provocationTop: "Tu peux mieux ?",
-    provocationBottom: "Prouve-le.",
     statPerformance: "PERFORMANCE",
     statRank: "RANG MONDIAL",
     fallbackUser: "athlète",
@@ -71,8 +69,6 @@ const TRANSLATIONS = {
     kingTitle: "KING",
     kingSubtitle: "— #1 MONDIAL —",
     kingChallengeLabel: "DÉFI MAÎTRISÉ",
-    kingProvocationTop: "Le sommet est pris.",
-    kingProvocationBottom: "Détrône-moi.",
     kingCtaTop: "Bats ce score.",
     kingCtaBottom: "Prends le trône.",
   },
@@ -80,8 +76,6 @@ const TRANSLATIONS = {
     headerTag: "set a new mark.",
     challengeLabel: "CHALLENGE",
     scoreLabel: "SCORE / 100",
-    provocationTop: "Think you're better?",
-    provocationBottom: "Prove it.",
     statPerformance: "PERFORMANCE",
     statRank: "WORLD RANK",
     fallbackUser: "athlete",
@@ -89,12 +83,43 @@ const TRANSLATIONS = {
     kingTitle: "KING",
     kingSubtitle: "— #1 WORLDWIDE —",
     kingChallengeLabel: "CHALLENGE MASTERED",
-    kingProvocationTop: "The top is taken.",
-    kingProvocationBottom: "Dethrone me.",
     kingCtaTop: "Beat this score.",
     kingCtaBottom: "Take the throne.",
   },
 } as const;
+
+// === EGO-BAIT (per tier × locale) ===
+
+const EGO_BAIT = {
+  rookie: {
+    fr: { line1: "J'ai osé.", line2: "Et toi ?" },
+    en: { line1: "I dared.", line2: "Did you?" },
+  },
+  solid: {
+    fr: { line1: "Pas mal.", line2: "Fais mieux." },
+    en: { line1: "Not bad.", line2: "Do better." },
+  },
+  beast: {
+    fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
+    en: { line1: "Brutal performance.", line2: "Your move." },
+  },
+  elite: {
+    fr: { line1: "TOP 5% mondial.", line2: "Bats-moi si tu peux." },
+    en: { line1: "Top 5% worldwide.", line2: "Beat me if you can." },
+  },
+  king: {
+    fr: { line1: "#1 mondial.", line2: "Personne ne fait mieux." },
+    en: { line1: "#1 worldwide.", line2: "Nobody does better." },
+  },
+} as const;
+
+const getEgoBait = (badge: string, locale: string) => {
+  const validBadge = (badge in EGO_BAIT
+    ? badge
+    : "rookie") as keyof typeof EGO_BAIT;
+  const lang = (locale === "en" ? "en" : "fr") as "fr" | "en";
+  return EGO_BAIT[validBadge][lang];
+};
 
 // === HELPERS ===
 
@@ -189,7 +214,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
   const scoreFontSize = isKing ? 460 : 500;
   const scoreLineHeight = isKing ? 540 : 600;
-  const scoreGlowRadius = isKing ? 35 : 25;
+  const scoreGlowRadius = isKing ? 14 : 12;
   const haloCY = isKing ? 950 : 900;
   const haloMid = THEME.haloOpacity * 0.4;
 
@@ -293,12 +318,12 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
         </View>
       )}
 
-      <View style={styles.scoreSection}>
+      <View style={[styles.scoreSection, { top: isKing ? 980 : 720 }]}>
         <View
           style={[
             styles.scoreContainer,
             {
-              height: scoreFontSize * 1.6,
+              height: scoreLineHeight,
               paddingHorizontal: 80,
             },
           ]}
@@ -319,42 +344,31 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
             {displayScore}
           </Text>
         </View>
-        <Text style={[styles.scoreLabel, { color: THEME.textMuted }]}>{t.scoreLabel}</Text>
       </View>
+      <Text style={[styles.scoreLabel, { color: THEME.textMuted }]}>{t.scoreLabel}</Text>
 
-      {!isKing && (
-        <View style={styles.tierBlock}>
-          <View
-            style={[
-              styles.tierPill,
-              { backgroundColor: "#1A1A1A", borderColor: "#3A4540" },
-            ]}
-          >
-            <View style={[styles.tierDot, { backgroundColor: THEME.textMuted }]} />
-            <Text style={[styles.tierLabel, { color: THEME.textTier }]}>
-              {badge.toUpperCase()}
+      {(() => {
+        const egoBait = getEgoBait(badge, locale);
+        return (
+          <View style={styles.egoBaitBlock}>
+            <Text style={[styles.egoBaitLine, { color: THEME.textPrimary }]}>
+              {egoBait.line1}
+            </Text>
+            <Text
+              style={[
+                styles.egoBaitLine,
+                styles.egoBaitAccent,
+                {
+                  color: THEME.scoreColorMid,
+                  textShadowColor: THEME.haloColor,
+                },
+              ]}
+            >
+              {egoBait.line2}
             </Text>
           </View>
-        </View>
-      )}
-
-      <View style={styles.provocationBlock}>
-        <Text style={[styles.provocationLine, { color: THEME.textPrimary }]}>
-          {isKing ? t.kingProvocationTop : t.provocationTop}
-        </Text>
-        <Text
-          style={[
-            styles.provocationLine,
-            styles.provocationAccent,
-            {
-              color: THEME.accentColor,
-              textShadowColor: THEME.accentColor,
-            },
-          ]}
-        >
-          {isKing ? t.kingProvocationBottom : t.provocationBottom}
-        </Text>
-      </View>
+        );
+      })()}
 
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { borderColor: THEME.borderSubtle }]}>
@@ -423,7 +437,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     position: "absolute",
-    top: 130,
+    top: 280,
     left: 80,
     flexDirection: "row",
     alignItems: "center",
@@ -456,7 +470,7 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     position: "absolute",
-    top: 130,
+    top: 280,
     right: 80,
     alignItems: "flex-end",
   },
@@ -473,7 +487,7 @@ const styles = StyleSheet.create({
   },
   challengeBlock: {
     position: "absolute",
-    top: 380,
+    top: 460,
     left: 80,
     right: 80,
     alignItems: "center",
@@ -492,7 +506,7 @@ const styles = StyleSheet.create({
   },
   kingBlock: {
     position: "absolute",
-    top: 320,
+    top: 600,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -527,7 +541,6 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     position: "absolute",
-    top: 700,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -546,58 +559,38 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   scoreLabel: {
+    position: "absolute",
+    top: 1280,
+    left: 0,
+    right: 0,
     fontFamily: "Poppins_500Medium",
     fontSize: 18,
     letterSpacing: 8,
-    marginTop: 12,
-  },
-  tierBlock: {
-    position: "absolute",
-    top: 1300,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  tierPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 36,
-    paddingVertical: 14,
-    borderRadius: 30,
-    borderWidth: 1,
-  },
-  tierDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 18,
-  },
-  tierLabel: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 24,
-    letterSpacing: 6,
-  },
-  provocationBlock: {
-    position: "absolute",
-    top: 1420,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  provocationLine: {
-    fontFamily: "Poppins_800ExtraBold",
-    fontSize: 56,
-    letterSpacing: -1,
     textAlign: "center",
-    lineHeight: 70,
   },
-  provocationAccent: {
+  egoBaitBlock: {
+    position: "absolute",
+    top: 1330,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingHorizontal: 80,
+  },
+  egoBaitLine: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 76,
+    letterSpacing: -2,
+    textAlign: "center",
+    lineHeight: 82,
+    marginBottom: 6,
+  },
+  egoBaitAccent: {
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 12,
   },
   statsRow: {
     position: "absolute",
-    top: 1580,
+    top: 1510,
     left: 60,
     right: 60,
     flexDirection: "row",
@@ -605,28 +598,28 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: 460,
-    height: 180,
-    borderRadius: 32,
+    height: 100,
+    borderRadius: 24,
     borderWidth: 1,
     backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
   },
   statLabel: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
+    fontSize: 13,
     letterSpacing: 4,
-    marginBottom: 18,
+    marginBottom: 6,
   },
   statValue: {
     fontFamily: "Poppins_800ExtraBold",
-    fontSize: 78,
-    letterSpacing: -2,
+    fontSize: 48,
+    letterSpacing: -1,
   },
   ctaBlock: {
     position: "absolute",
-    top: 1770,
+    top: 1620,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -644,7 +637,7 @@ const styles = StyleSheet.create({
   },
   footerUrl: {
     position: "absolute",
-    bottom: 20,
+    bottom: 250,
     left: 0,
     right: 0,
     fontFamily: "Poppins_600SemiBold",
