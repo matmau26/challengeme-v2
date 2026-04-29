@@ -331,16 +331,18 @@ export default function Result() {
           <FadeInView
             duration={500}
             delay={100}
-            style={{ alignItems: "center", marginBottom: 24 }}
+            style={{ alignItems: "center", marginBottom: 24, overflow: "visible" }}
           >
             <View
               style={{
-                width: 320,
-                height: 240,
+                width: "100%",
+                minHeight: 240,
+                paddingVertical: 40,
+                paddingHorizontal: 60,
                 alignItems: "center",
                 justifyContent: "center",
                 overflow: "visible",
-                marginVertical: 24,
+                marginVertical: 16,
               }}
             >
               <Animated.View
@@ -349,8 +351,10 @@ export default function Result() {
                   position: "absolute",
                   top: 0,
                   left: 0,
-                  width: 320,
-                  height: 240,
+                  right: 0,
+                  bottom: 0,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
                 pointerEvents="none"
               >
@@ -375,12 +379,17 @@ export default function Result() {
                   <Rect x="0" y="0" width="320" height="240" fill="url(#scoreHalo)" />
                 </Svg>
               </Animated.View>
-              <Animated.View style={{ transform: [{ scale: scoreScale }] }}>
+              <Animated.View
+                style={{
+                  transform: [{ scale: scoreScale }],
+                  overflow: "visible",
+                }}
+              >
                 <Text
                   style={{
                     fontFamily: "Poppins_800ExtraBold",
                     fontSize: 140,
-                    lineHeight: 160,
+                    lineHeight: 180,
                     letterSpacing: -6,
                     color: palette.primary,
                     textAlign: "center",
@@ -388,6 +397,7 @@ export default function Result() {
                     textShadowOffset: { width: 0, height: 0 },
                     textShadowRadius: 24,
                     includeFontPadding: false,
+                    paddingVertical: 20,
                   }}
                 >
                   {displayScore}
