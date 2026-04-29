@@ -39,6 +39,35 @@ import { formatTextUnits } from "@/src/lib/units";
 import { ShareCard } from "@/src/components/ShareCard";
 import { useUserProfile } from "@/src/hooks/useUserProfile";
 
+const EGO_BAIT = {
+  rookie: {
+    fr: { line1: "J'ai osé.", line2: "Et toi ?" },
+    en: { line1: "I dared.", line2: "Did you?" },
+  },
+  solid: {
+    fr: { line1: "Pas mal.", line2: "Fais mieux." },
+    en: { line1: "Not bad.", line2: "Do better." },
+  },
+  beast: {
+    fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
+    en: { line1: "Brutal performance.", line2: "Your move." },
+  },
+  elite: {
+    fr: { line1: "TOP 5% mondial.", line2: "Bats-moi si tu peux." },
+    en: { line1: "Top 5% worldwide.", line2: "Beat me if you can." },
+  },
+  king: {
+    fr: { line1: "#1 mondial.", line2: "Personne ne fait mieux." },
+    en: { line1: "#1 worldwide.", line2: "Nobody does better." },
+  },
+} as const;
+
+const getEgoBait = (badge: string, locale: string) => {
+  const tier = (badge in EGO_BAIT ? badge : "rookie") as keyof typeof EGO_BAIT;
+  const lang = (locale === "en" ? "en" : "fr") as "fr" | "en";
+  return EGO_BAIT[tier][lang];
+};
+
 const TIER_PALETTE = {
   rookie: { primary: "#60A5FA", halo: "#60A5FA", iconColor: "#60A5FA", glow: "#60A5FA" },
   solid:  { primary: "#00D4FF", halo: "#00D4FF", iconColor: "#00D4FF", glow: "#00D4FF" },
@@ -395,7 +424,7 @@ export default function Result() {
                     textAlign: "center",
                     textShadowColor: palette.glow,
                     textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 24,
+                    textShadowRadius: 12,
                     includeFontPadding: false,
                     paddingVertical: 20,
                   }}
@@ -480,6 +509,51 @@ export default function Result() {
               </View>
             )}
           </FadeInView>
+
+          {(() => {
+            const egoBait = getEgoBait(badge, lang);
+            return (
+              <FadeInView
+                duration={400}
+                delay={250}
+                style={{
+                  width: "100%",
+                  alignItems: "center",
+                  marginBottom: 24,
+                  paddingHorizontal: 24,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Poppins_800ExtraBold",
+                    fontSize: 44,
+                    lineHeight: 50,
+                    letterSpacing: -1,
+                    color: "#FFFFFF",
+                    textAlign: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  {egoBait.line1}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Poppins_800ExtraBold",
+                    fontSize: 44,
+                    lineHeight: 50,
+                    letterSpacing: -1,
+                    color: palette.primary,
+                    textAlign: "center",
+                    textShadowColor: palette.glow,
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 8,
+                  }}
+                >
+                  {egoBait.line2}
+                </Text>
+              </FadeInView>
+            );
+          })()}
 
           <FadeInView
             duration={400}
