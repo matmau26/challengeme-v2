@@ -62,6 +62,8 @@ const TRANSLATIONS = {
     headerTag: "a posé sa marque.",
     challengeLabel: "DÉFI",
     scoreLabel: "SCORE / 100",
+    provocationTop: "Tu peux mieux ?",
+    provocationBottom: "Prouve-le.",
     statPerformance: "PERFORMANCE",
     statRank: "RANG MONDIAL",
     fallbackUser: "athlète",
@@ -69,6 +71,8 @@ const TRANSLATIONS = {
     kingTitle: "KING",
     kingSubtitle: "— #1 MONDIAL —",
     kingChallengeLabel: "DÉFI MAÎTRISÉ",
+    kingProvocationTop: "Le sommet est pris.",
+    kingProvocationBottom: "Détrône-moi.",
     kingCtaTop: "Bats ce score.",
     kingCtaBottom: "Prends le trône.",
   },
@@ -76,6 +80,8 @@ const TRANSLATIONS = {
     headerTag: "set a new mark.",
     challengeLabel: "CHALLENGE",
     scoreLabel: "SCORE / 100",
+    provocationTop: "Think you're better?",
+    provocationBottom: "Prove it.",
     statPerformance: "PERFORMANCE",
     statRank: "WORLD RANK",
     fallbackUser: "athlete",
@@ -83,41 +89,12 @@ const TRANSLATIONS = {
     kingTitle: "KING",
     kingSubtitle: "— #1 WORLDWIDE —",
     kingChallengeLabel: "CHALLENGE MASTERED",
+    kingProvocationTop: "The top is taken.",
+    kingProvocationBottom: "Dethrone me.",
     kingCtaTop: "Beat this score.",
     kingCtaBottom: "Take the throne.",
   },
 } as const;
-
-// === EGO-BAIT (per tier × locale) ===
-
-const EGO_BAIT = {
-  rookie: {
-    fr: { line1: "J'ai osé.", line2: "Et toi ?" },
-    en: { line1: "I dared.", line2: "Did you?" },
-  },
-  solid: {
-    fr: { line1: "Pas mal.", line2: "Fais mieux." },
-    en: { line1: "Not bad.", line2: "Do better." },
-  },
-  beast: {
-    fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
-    en: { line1: "Brutal performance.", line2: "Your move." },
-  },
-  elite: {
-    fr: { line1: "TOP 5% mondial.", line2: "Bats-moi si tu peux." },
-    en: { line1: "Top 5% worldwide.", line2: "Beat me if you can." },
-  },
-  king: {
-    fr: { line1: "#1 mondial.", line2: "Personne ne fait mieux." },
-    en: { line1: "#1 worldwide.", line2: "Nobody does better." },
-  },
-} as const;
-
-const getEgoBait = (badge: string, locale: string) => {
-  const tier = (badge in EGO_BAIT ? badge : "rookie") as keyof typeof EGO_BAIT;
-  const lang = (locale === "en" ? "en" : "fr") as "fr" | "en";
-  return EGO_BAIT[tier][lang];
-};
 
 // === HELPERS ===
 
@@ -212,7 +189,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
   const scoreFontSize = isKing ? 460 : 500;
   const scoreLineHeight = isKing ? 540 : 600;
-  const scoreGlowRadius = isKing ? 14 : 12;
+  const scoreGlowRadius = isKing ? 35 : 25;
   const haloCY = isKing ? 950 : 900;
   const haloMid = THEME.haloOpacity * 0.4;
 
@@ -321,7 +298,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
           style={[
             styles.scoreContainer,
             {
-              height: scoreLineHeight,
+              height: scoreFontSize * 1.6,
               paddingHorizontal: 80,
             },
           ]}
@@ -361,28 +338,23 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
         </View>
       )}
 
-      {(() => {
-        const egoBait = getEgoBait(badge, locale);
-        return (
-          <View style={styles.egoBaitBlock}>
-            <Text style={[styles.egoBaitLine, { color: THEME.textPrimary }]}>
-              {egoBait.line1}
-            </Text>
-            <Text
-              style={[
-                styles.egoBaitLine,
-                styles.egoBaitAccent,
-                {
-                  color: THEME.scoreColorMid,
-                  textShadowColor: THEME.haloColor,
-                },
-              ]}
-            >
-              {egoBait.line2}
-            </Text>
-          </View>
-        );
-      })()}
+      <View style={styles.provocationBlock}>
+        <Text style={[styles.provocationLine, { color: THEME.textPrimary }]}>
+          {isKing ? t.kingProvocationTop : t.provocationTop}
+        </Text>
+        <Text
+          style={[
+            styles.provocationLine,
+            styles.provocationAccent,
+            {
+              color: THEME.accentColor,
+              textShadowColor: THEME.accentColor,
+            },
+          ]}
+        >
+          {isKing ? t.kingProvocationBottom : t.provocationBottom}
+        </Text>
+      </View>
 
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { borderColor: THEME.borderSubtle }]}>
@@ -451,7 +423,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     position: "absolute",
-    top: 280,
+    top: 130,
     left: 80,
     flexDirection: "row",
     alignItems: "center",
@@ -484,7 +456,7 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     position: "absolute",
-    top: 280,
+    top: 130,
     right: 80,
     alignItems: "flex-end",
   },
@@ -501,7 +473,7 @@ const styles = StyleSheet.create({
   },
   challengeBlock: {
     position: "absolute",
-    top: 480,
+    top: 380,
     left: 80,
     right: 80,
     alignItems: "center",
@@ -520,7 +492,7 @@ const styles = StyleSheet.create({
   },
   kingBlock: {
     position: "absolute",
-    top: 420,
+    top: 320,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -555,7 +527,7 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     position: "absolute",
-    top: 720,
+    top: 700,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -581,7 +553,7 @@ const styles = StyleSheet.create({
   },
   tierBlock: {
     position: "absolute",
-    top: 1280,
+    top: 1300,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -605,29 +577,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
     letterSpacing: 6,
   },
-  egoBaitBlock: {
+  provocationBlock: {
     position: "absolute",
-    top: 1400,
+    top: 1420,
     left: 0,
     right: 0,
     alignItems: "center",
-    paddingHorizontal: 80,
   },
-  egoBaitLine: {
+  provocationLine: {
     fontFamily: "Poppins_800ExtraBold",
-    fontSize: 96,
-    letterSpacing: -2,
+    fontSize: 56,
+    letterSpacing: -1,
     textAlign: "center",
-    lineHeight: 100,
-    marginBottom: 8,
+    lineHeight: 70,
   },
-  egoBaitAccent: {
+  provocationAccent: {
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 14,
+    textShadowRadius: 8,
   },
   statsRow: {
     position: "absolute",
-    top: 1560,
+    top: 1580,
     left: 60,
     right: 60,
     flexDirection: "row",
@@ -656,7 +626,7 @@ const styles = StyleSheet.create({
   },
   ctaBlock: {
     position: "absolute",
-    top: 1730,
+    top: 1770,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -674,7 +644,7 @@ const styles = StyleSheet.create({
   },
   footerUrl: {
     position: "absolute",
-    bottom: 250,
+    bottom: 20,
     left: 0,
     right: 0,
     fontFamily: "Poppins_600SemiBold",
