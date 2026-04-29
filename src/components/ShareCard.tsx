@@ -298,7 +298,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
           style={[
             styles.scoreContainer,
             {
-              height: scoreFontSize * 1.6,
+              height: scoreFontSize * 1.7,
               paddingHorizontal: 80,
             },
           ]}
@@ -543,7 +543,8 @@ const styles = StyleSheet.create({
     letterSpacing: -10,
     textAlign: "center",
     includeFontPadding: false,
-    paddingVertical: 30,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
   scoreLabel: {
     fontFamily: "Poppins_500Medium",

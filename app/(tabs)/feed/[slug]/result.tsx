@@ -336,7 +336,7 @@ export default function Result() {
             <View
               style={{
                 width: "100%",
-                minHeight: 240,
+                minHeight: 320,
                 paddingVertical: 40,
                 paddingHorizontal: 60,
                 alignItems: "center",
@@ -383,13 +383,15 @@ export default function Result() {
                 style={{
                   transform: [{ scale: scoreScale }],
                   overflow: "visible",
+                  paddingVertical: 40,
+                  paddingHorizontal: 40,
                 }}
               >
                 <Text
                   style={{
                     fontFamily: "Poppins_800ExtraBold",
                     fontSize: 140,
-                    lineHeight: 180,
+                    lineHeight: 220,
                     letterSpacing: -6,
                     color: palette.primary,
                     textAlign: "center",
@@ -397,7 +399,8 @@ export default function Result() {
                     textShadowOffset: { width: 0, height: 0 },
                     textShadowRadius: 24,
                     includeFontPadding: false,
-                    paddingVertical: 20,
+                    paddingVertical: 60,
+                    paddingHorizontal: 30,
                   }}
                 >
                   {displayScore}
