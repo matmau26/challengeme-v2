@@ -305,6 +305,8 @@ export default function Result() {
           performance={displayValue}
           rank={rank}
           badge={badge}
+          totalAttempts={totalAttempts}
+          category={challenge?.category || ""}
         />
       </View>
 

@@ -1,197 +1,177 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, {
-  Defs,
-  RadialGradient,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-  Rect,
-  Polygon,
-  G,
-  Circle,
-} from "react-native-svg";
+import Svg, { Defs, RadialGradient, Stop, Rect, Circle } from "react-native-svg";
 import type { Badge } from "@/src/lib/types";
-
-// === THEME TOKENS ===
-
-const STANDARD_THEME = {
-  bgGradientFrom: "#0A2418",
-  bgGradientMid: "#050D08",
-  bgGradientTo: "#000000",
-  scoreColorFrom: "#7FFFC4",
-  scoreColorMid: "#00FF88",
-  scoreColorTo: "#00CC55",
-  haloColor: "#00FF88",
-  haloOpacity: 0.45,
-  accentColor: "#00FF88",
-  borderSubtle: "rgba(255,255,255,0.08)",
-  borderAccent: "rgba(0,255,136,0.4)",
-  textPrimary: "#FFFFFF",
-  textMuted: "#7A8580",
-  textSubtle: "#3A4540",
-  textTier: "#A8B0AC",
-  avatarBg: "#1A2A20",
-  avatarBorder: "#00FF88",
-} as const;
-
-const KING_THEME = {
-  bgGradientFrom: "#2A1F08",
-  bgGradientMid: "#100A02",
-  bgGradientTo: "#000000",
-  scoreColorFrom: "#FFF4B0",
-  scoreColorMid: "#FFD700",
-  scoreColorTo: "#B8860B",
-  haloColor: "#FFD700",
-  haloOpacity: 0.55,
-  accentColor: "#FFD700",
-  borderSubtle: "rgba(255,215,0,0.2)",
-  borderAccent: "rgba(255,215,0,0.7)",
-  textPrimary: "#FFFFFF",
-  textMuted: "#9A8550",
-  textSubtle: "#5A4A20",
-  textTier: "#FFD700",
-  avatarBg: "#1F1808",
-  avatarBorder: "#FFD700",
-} as const;
-
-// === TRANSLATIONS ===
-
-const TRANSLATIONS = {
-  fr: {
-    headerTag: "a posé sa marque.",
-    challengeLabel: "DÉFI",
-    scoreLabel: "SCORE / 100",
-    statPerformance: "PERFORMANCE",
-    statRank: "RANG MONDIAL",
-    fallbackUser: "athlète",
-    kingHeaderTag: "règne sur ce défi.",
-    kingTitle: "KING",
-    kingSubtitle: "— #1 MONDIAL —",
-    kingChallengeLabel: "DÉFI MAÎTRISÉ",
-    kingCtaTop: "Bats ce score.",
-    kingCtaBottom: "Prends le trône.",
-  },
-  en: {
-    headerTag: "set a new mark.",
-    challengeLabel: "CHALLENGE",
-    scoreLabel: "SCORE / 100",
-    statPerformance: "PERFORMANCE",
-    statRank: "WORLD RANK",
-    fallbackUser: "athlete",
-    kingHeaderTag: "rules this challenge.",
-    kingTitle: "KING",
-    kingSubtitle: "— #1 WORLDWIDE —",
-    kingChallengeLabel: "CHALLENGE MASTERED",
-    kingCtaTop: "Beat this score.",
-    kingCtaBottom: "Take the throne.",
-  },
-} as const;
-
-// === EGO-BAIT (per tier × locale) ===
-
-const EGO_BAIT = {
-  rookie: {
-    fr: { line1: "J'ai osé.", line2: "Et toi ?" },
-    en: { line1: "I dared.", line2: "Did you?" },
-  },
-  solid: {
-    fr: { line1: "Pas mal.", line2: "Fais mieux." },
-    en: { line1: "Not bad.", line2: "Do better." },
-  },
-  beast: {
-    fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
-    en: { line1: "Brutal performance.", line2: "Your move." },
-  },
-  elite: {
-    fr: { line1: "TOP 5% mondial.", line2: "Bats-moi si tu peux." },
-    en: { line1: "Top 5% worldwide.", line2: "Beat me if you can." },
-  },
-  king: {
-    fr: { line1: "#1 mondial.", line2: "Personne ne fait mieux." },
-    en: { line1: "#1 worldwide.", line2: "Nobody does better." },
-  },
-} as const;
-
-const getEgoBait = (badge: string, locale: string) => {
-  const validBadge = (badge in EGO_BAIT
-    ? badge
-    : "rookie") as keyof typeof EGO_BAIT;
-  const lang = (locale === "en" ? "en" : "fr") as "fr" | "en";
-  return EGO_BAIT[validBadge][lang];
-};
-
-// === HELPERS ===
 
 const W = 1080;
 const H = 1920;
 
-function getStandardCta(rank: number, locale: "fr" | "en"): { top: string; bottom: string } {
-  if (locale === "fr") {
-    if (rank === 1) return { top: "#1 mondial.", bottom: "Détrône-le." };
-    if (rank <= 100) return { top: `Top ${rank} mondial.`, bottom: "Et toi ?" };
-    if (rank <= 1000) return { top: "Dans le top 1000.", bottom: "Et toi ?" };
-    return { top: "Sur le tableau mondial.", bottom: "À ton tour." };
-  }
-  if (rank === 1) return { top: "#1 worldwide.", bottom: "Dethrone them." };
-  if (rank <= 100) return { top: `Top ${rank} worldwide.`, bottom: "Your turn?" };
-  if (rank <= 1000) return { top: "In the global top 1000.", bottom: "Your turn?" };
-  return { top: "On the worldwide board.", bottom: "Your turn." };
-}
+const TIER_PALETTES = {
+  rookie: {
+    primary: "#4DAA7A",
+    primaryDark: "#1f5238",
+    cardBg: "#0d1612",
+    starsActive: 1,
+    starsTotal: 5,
+    badgeName: "ROOKIE",
+    statusFr: "vient de poser sa marque",
+    statusEn: "set a new mark",
+    egoBaitFr: { line1: "J'AI OSÉ.", line2: "ET TOI ?" },
+    egoBaitEn: { line1: "I DARED.", line2: "DID YOU?" },
+  },
+  solid: {
+    primary: "#00D4FF",
+    primaryDark: "#003e4d",
+    cardBg: "#0d1620",
+    starsActive: 2,
+    starsTotal: 5,
+    badgeName: "SOLID",
+    statusFr: "vient de poser sa marque",
+    statusEn: "set a new mark",
+    egoBaitFr: { line1: "PAS MAL.", line2: "FAIS MIEUX." },
+    egoBaitEn: { line1: "NOT BAD.", line2: "DO BETTER." },
+  },
+  beast: {
+    primary: "#00FF88",
+    primaryDark: "#003d20",
+    cardBg: "#0d1f15",
+    starsActive: 3,
+    starsTotal: 5,
+    badgeName: "BEAST",
+    statusFr: "vient de débloquer",
+    statusEn: "just unlocked",
+    egoBaitFr: { line1: "J'AI OSÉ.", line2: "TOI, T'OSES ?" },
+    egoBaitEn: { line1: "I DARED.", line2: "YOU DARE?" },
+  },
+  elite: {
+    primary: "#FF6B35",
+    primaryDark: "#4a1f0a",
+    cardBg: "#1f1208",
+    starsActive: 4,
+    starsTotal: 5,
+    badgeName: "ELITE",
+    statusFr: "vient de débloquer",
+    statusEn: "just unlocked",
+    egoBaitFr: { line1: "TOP 5%.", line2: "BATS-MOI." },
+    egoBaitEn: { line1: "TOP 5%.", line2: "BEAT ME." },
+  },
+  king: {
+    primary: "#FFD700",
+    primaryDark: "#5c4a00",
+    cardBg: "#1f1d08",
+    starsActive: 5,
+    starsTotal: 5,
+    badgeName: "KING",
+    statusFr: "règne sur ce défi",
+    statusEn: "rules this challenge",
+    egoBaitFr: { line1: "#1 MONDIAL.", line2: "PERSONNE NE FAIT MIEUX." },
+    egoBaitEn: { line1: "#1 WORLDWIDE.", line2: "NOBODY DOES BETTER." },
+  },
+} as const;
 
-// === SUB-COMPONENTS ===
+const CATEGORY_EMOJI: Record<string, string> = {
+  muscle: "🏋️",
+  fitness: "💪",
+  football: "⚽",
+  running: "🏃",
+  crossfit: "🔥",
+  hyrox: "⚔️",
+  extreme: "⚡",
+  flechette: "🎯",
+};
 
-function Crown({ accentColor }: { accentColor: string }) {
-  return (
-    <Svg width="200" height="80" viewBox="0 0 200 80">
-      <Defs>
-        <SvgLinearGradient id="crownGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#FFEB7F" />
-          <Stop offset="50%" stopColor={accentColor} />
-          <Stop offset="100%" stopColor="#B8860B" />
-        </SvgLinearGradient>
-      </Defs>
-      <Rect x="35" y="50" width="130" height="14" fill="url(#crownGrad)" rx="2" />
-      <Polygon
-        points="35,50 45,20 55,45 65,5 75,45 85,15 95,45 105,5 115,45 125,15 135,45 145,5 155,45 165,20 165,50"
-        fill="url(#crownGrad)"
-      />
-      <Circle cx="65" cy="20" r="4" fill="#FF1744" />
-      <Circle cx="100" cy="15" r="5" fill="#FF1744" />
-      <Circle cx="135" cy="20" r="4" fill="#FF1744" />
-    </Svg>
-  );
-}
+const CATEGORY_LABEL = {
+  fr: {
+    muscle: "MUSCU",
+    fitness: "FITNESS",
+    football: "FOOT",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTRÊME",
+    flechette: "FLÉCHETTES",
+  },
+  en: {
+    muscle: "STRENGTH",
+    fitness: "FITNESS",
+    football: "FOOTBALL",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTREME",
+    flechette: "DARTS",
+  },
+} as const;
 
-function Rays({ accentColor }: { accentColor: string }) {
-  return (
-    <Svg
-      width={W}
-      height={H}
-      viewBox={`0 0 ${W} ${H}`}
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-    >
-      <G transform={`translate(${W / 2}, 950)`} opacity="0.12">
-        <Polygon points="0,0 -40,-1100 40,-1100" fill={accentColor} />
-        <Polygon points="0,0 -40,1100 40,1100" fill={accentColor} />
-        <Polygon points="0,0 -1100,-40 -1100,40" fill={accentColor} />
-        <Polygon points="0,0 1100,-40 1100,40" fill={accentColor} />
-      </G>
-      <G transform={`translate(${W / 2}, 950) rotate(45)`} opacity="0.08">
-        <Polygon points="0,0 -30,-1100 30,-1100" fill={accentColor} />
-        <Polygon points="0,0 -30,1100 30,1100" fill={accentColor} />
-        <Polygon points="0,0 -1100,-30 -1100,30" fill={accentColor} />
-        <Polygon points="0,0 1100,-30 1100,30" fill={accentColor} />
-      </G>
-    </Svg>
-  );
-}
+const CATEGORY_LABEL_SHORT = {
+  fr: {
+    muscle: "MUSCU",
+    fitness: "FIT",
+    football: "FOOT",
+    running: "RUN",
+    crossfit: "CFT",
+    hyrox: "HYROX",
+    extreme: "EXT",
+    flechette: "DARTS",
+  },
+  en: {
+    muscle: "STR",
+    fitness: "FIT",
+    football: "FOOT",
+    running: "RUN",
+    crossfit: "CFT",
+    hyrox: "HYROX",
+    extreme: "EXT",
+    flechette: "DARTS",
+  },
+} as const;
 
-// === MAIN COMPONENT ===
+const getCategoryEmoji = (cat: string): string =>
+  CATEGORY_EMOJI[(cat || "").toLowerCase()] || "🎯";
+
+const getCategoryLabel = (cat: string, locale: string): string => {
+  const lang = locale === "en" ? "en" : "fr";
+  const key = (cat || "").toLowerCase() as keyof typeof CATEGORY_LABEL.fr;
+  return CATEGORY_LABEL[lang][key] || (cat || "").toUpperCase();
+};
+
+const getCategoryLabelShort = (cat: string, locale: string): string => {
+  const lang = locale === "en" ? "en" : "fr";
+  const key = (cat || "").toLowerCase() as keyof typeof CATEGORY_LABEL_SHORT.fr;
+  return CATEGORY_LABEL_SHORT[lang][key] || getCategoryLabel(cat, locale);
+};
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const padNumber = (n: number, length: number = 3): string =>
+  String(Math.max(0, Math.floor(n))).padStart(length, "0");
+
+const renderStars = (active: number, total: number): string =>
+  "★".repeat(active) + "☆".repeat(total - active);
+
+const PARTICLES: { x: number; y: number }[] = [
+  { x: 90, y: 280 }, { x: 1010, y: 320 }, { x: 50, y: 600 },
+  { x: 1030, y: 780 }, { x: 80, y: 950 }, { x: 1020, y: 1100 },
+  { x: 100, y: 1300 }, { x: 1010, y: 1450 }, { x: 70, y: 420 },
+  { x: 1020, y: 540 }, { x: 60, y: 850 }, { x: 1010, y: 990 },
+  { x: 90, y: 1200 }, { x: 1030, y: 1230 }, { x: 50, y: 1380 },
+];
+
+const PARTICLES_KING_EXTRA: { x: number; y: number }[] = [
+  { x: 130, y: 350 }, { x: 970, y: 380 }, { x: 110, y: 500 },
+  { x: 990, y: 660 }, { x: 140, y: 720 }, { x: 980, y: 880 },
+  { x: 120, y: 1050 }, { x: 970, y: 1180 }, { x: 150, y: 1170 },
+  { x: 990, y: 1370 }, { x: 110, y: 1430 }, { x: 980, y: 470 },
+  { x: 130, y: 600 }, { x: 990, y: 1290 }, { x: 140, y: 880 },
+];
 
 interface ShareCardProps {
-  locale: "fr" | "en";
+  locale: string;
   username: string;
   avatarUrl?: string;
   challengeName: string;
@@ -199,214 +179,249 @@ interface ShareCardProps {
   performance: string;
   rank: number;
   badge: Badge;
+  totalAttempts: number;
+  category: string;
+}
+
+function Avatar({ avatarUrl, username }: { avatarUrl?: string; username: string }) {
+  const [imageError, setImageError] = useState(false);
+  if (avatarUrl && !imageError) {
+    return (
+      <Image
+        source={{ uri: avatarUrl }}
+        style={styles.avatarImage}
+        onError={() => setImageError(true)}
+      />
+    );
+  }
+  const initial = (username?.[0] || "?").toUpperCase();
+  return (
+    <View style={styles.avatarFallback}>
+      <Text style={styles.avatarInitial}>{initial}</Text>
+    </View>
+  );
 }
 
 export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
-  { locale, username, avatarUrl, challengeName, score, performance, rank, badge },
+  {
+    locale,
+    username,
+    avatarUrl,
+    challengeName,
+    score,
+    performance,
+    rank,
+    badge,
+    totalAttempts,
+    category,
+  },
   ref,
 ) {
-  const t = TRANSLATIONS[locale];
+  const lang = locale === "en" ? "en" : "fr";
+  const palette =
+    TIER_PALETTES[badge as keyof typeof TIER_PALETTES] || TIER_PALETTES.rookie;
   const isKing = badge === "king" && rank === 1;
-  const THEME = isKing ? KING_THEME : STANDARD_THEME;
 
-  const safeUser = (username && username.trim()) || t.fallbackUser;
-  const initial = safeUser.charAt(0).toUpperCase() || "?";
+  const safeUser = (username && username.trim()) || "athlete";
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
-  const scoreFontSize = isKing ? 380 : 500;
-  const scoreLineHeight = isKing ? 460 : 600;
-  const scoreGlowRadius = isKing ? 14 : 12;
-  const haloCY = isKing ? 950 : 900;
-  const haloMid = THEME.haloOpacity * 0.4;
+  const status = lang === "en" ? palette.statusEn : palette.statusFr;
+  const egoBait = lang === "en" ? palette.egoBaitEn : palette.egoBaitFr;
+  const ctaText = lang === "en" ? "BEAT ME →" : "BATS-MOI →";
 
-  const cta = isKing
-    ? { top: t.kingCtaTop, bottom: t.kingCtaBottom }
-    : getStandardCta(rank, locale);
+  const categoryLabel = getCategoryLabel(category, lang);
+  const categoryLabelShort = getCategoryLabelShort(category, lang);
+  const categoryEmoji = getCategoryEmoji(category);
+  const tierLabel = lang === "en" ? `${palette.badgeName} TIER` : palette.badgeName;
+  const stars = renderStars(palette.starsActive, palette.starsTotal);
+  const rankLabel = `N°${padNumber(rank, 3)}/${padNumber(totalAttempts, 3)}`;
 
-  const headerTag = isKing ? t.kingHeaderTag : t.headerTag;
+  const haloOpacity1 = isKing ? 0.5 : 0.4;
+  const haloOpacity2 = isKing ? 0.18 : 0.1;
+  const cardBorderWidth = isKing ? 8 : 6;
+  const particles = isKing ? [...PARTICLES, ...PARTICLES_KING_EXTRA] : PARTICLES;
+
+  const officialFr = "CHALLENGEME · CARTE OFFICIELLE";
+  const officialEn = "CHALLENGEME · OFFICIAL CARD";
+  const verifiedFr = "VÉRIFIÉ";
+  const verifiedEn = "VERIFIED";
+  const officialText = lang === "en" ? officialEn : officialFr;
+  const verifiedText = lang === "en" ? verifiedEn : verifiedFr;
+  const scoreXpLabel = lang === "en" ? "SCORE · XP" : "SCORE · XP";
+  const performanceLabel = "PERFORMANCE";
+  const rankCellLabel = lang === "en" ? "RANK" : "RANG";
+  const badgeCellLabel = "BADGE";
+  const catCellLabel = lang === "en" ? "CAT." : "CAT.";
 
   return (
-    <View ref={ref} collapsable={false} style={styles.card}>
-      <LinearGradient
-        colors={[THEME.bgGradientFrom, THEME.bgGradientMid, THEME.bgGradientTo]}
-        style={StyleSheet.absoluteFill}
-      />
+    <View ref={ref} collapsable={false} style={styles.canvas}>
+      {/* Halo extérieur SVG (derrière la card) */}
+      <Svg
+        width={1020}
+        height={1300}
+        viewBox="0 0 1020 1300"
+        style={[styles.absolute, { top: 200, left: 30 }]}
+        pointerEvents="none"
+      >
+        <Defs>
+          <RadialGradient id="cardHalo" cx="50%" cy="50%" r="60%">
+            <Stop offset="0%" stopColor={palette.primary} stopOpacity={haloOpacity1} />
+            <Stop offset="50%" stopColor={palette.primary} stopOpacity={haloOpacity2} />
+            <Stop offset="100%" stopColor={palette.primary} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="1020" height="1300" fill="url(#cardHalo)" />
+      </Svg>
 
+      {/* Particules */}
       <Svg
         width={W}
         height={H}
         viewBox={`0 0 ${W} ${H}`}
-        style={StyleSheet.absoluteFill}
+        style={styles.absoluteFill}
         pointerEvents="none"
       >
-        <Defs>
-          <RadialGradient
-            id="halo"
-            cx={W / 2}
-            cy={haloCY}
-            r="500"
-            gradientUnits="userSpaceOnUse"
-          >
-            <Stop offset="0%" stopColor={THEME.haloColor} stopOpacity={THEME.haloOpacity} />
-            <Stop offset="50%" stopColor={THEME.haloColor} stopOpacity={haloMid} />
-            <Stop offset="100%" stopColor={THEME.haloColor} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width={W} height={H} fill="url(#halo)" />
+        {particles.map((p, idx) => (
+          <Circle
+            key={idx}
+            cx={p.x}
+            cy={p.y}
+            r={4}
+            fill={palette.primary}
+            opacity={0.6}
+          />
+        ))}
       </Svg>
 
-      {isKing && <Rays accentColor={THEME.accentColor} />}
+      {/* === HEADER (hors carte) === */}
+      <View style={styles.topBar}>
+        <View style={[styles.topBarDot, { backgroundColor: palette.primary }]} />
+        <Text style={[styles.topBarText, { color: palette.primary }]}>challengeme.pro</Text>
+      </View>
 
       <View style={styles.headerLeft}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={[styles.avatar, { borderColor: THEME.avatarBorder }]}
-          />
-        ) : (
-          <View
-            style={[
-              styles.avatar,
-              { backgroundColor: THEME.avatarBg, borderColor: THEME.avatarBorder },
-            ]}
-          >
-            <Text style={[styles.avatarInitial, { color: THEME.accentColor }]}>{initial}</Text>
-          </View>
-        )}
-        <View style={styles.headerText}>
-          <Text style={[styles.username, { color: THEME.textPrimary }]} numberOfLines={1}>
+        <Avatar avatarUrl={avatarUrl} username={safeUser} />
+        <View style={styles.headerLeftText}>
+          <Text style={styles.username} numberOfLines={1}>
             @{safeUser}
           </Text>
-          <Text style={[styles.userTag, { color: THEME.textMuted }]} numberOfLines={1}>
-            {headerTag}
+          <Text style={styles.statusText} numberOfLines={1}>
+            {status}
           </Text>
         </View>
       </View>
 
       <View style={styles.headerRight}>
-        <Text style={[styles.brandName, { color: THEME.textPrimary }]}>ChallengeMe</Text>
-        <Text style={[styles.brandSlogan, { color: THEME.accentColor }]}>PROVE YOURSELF</Text>
+        <Text style={styles.brandName}>ChallengeMe</Text>
+        <Text style={[styles.brandSlogan, { color: palette.primary }]}>PROVE YOURSELF</Text>
       </View>
 
-      {isKing ? (
-        <View style={styles.kingBlock}>
-          <Crown accentColor={THEME.accentColor} />
-          <Text style={[styles.kingTitle, { color: THEME.accentColor }]}>{t.kingTitle}</Text>
-          <Text style={[styles.kingSubtitle, { color: THEME.accentColor }]}>{t.kingSubtitle}</Text>
-          <Text style={[styles.kingChallengeLabel, { color: THEME.textMuted }]}>
-            {t.kingChallengeLabel}
-          </Text>
-          <Text
-            style={[styles.kingChallengeName, { color: THEME.textPrimary }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {challengeName.toUpperCase()}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.challengeBlock}>
-          <Text style={[styles.challengeLabel, { color: THEME.textMuted }]}>{t.challengeLabel}</Text>
-          <Text
-            style={[styles.challengeName, { color: THEME.textPrimary }]}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {challengeName.toUpperCase()}
-          </Text>
-        </View>
+      {/* === CARD === */}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: palette.cardBg,
+            borderColor: palette.primary,
+            borderWidth: cardBorderWidth,
+          },
+        ]}
+      />
+
+      {/* Couronne KING (au-dessus de la bordure haute) */}
+      {isKing && (
+        <Text style={styles.kingCrown} allowFontScaling={false}>
+          👑
+        </Text>
       )}
 
-      <View style={[styles.scoreSection, { top: isKing ? 980 : 720 }]}>
-        <View
-          style={[
-            styles.scoreContainer,
-            {
-              height: scoreLineHeight,
-              paddingHorizontal: 80,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.scoreText,
-              {
-                fontSize: scoreFontSize,
-                lineHeight: scoreLineHeight,
-                color: THEME.scoreColorMid,
-                textShadowColor: THEME.haloColor,
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: scoreGlowRadius,
-              },
-            ]}
-          >
-            {displayScore}
-          </Text>
-        </View>
-      </View>
-      <Text
+      {/* === SECTION 1 — Header carte === */}
+      <Text style={[styles.categoryTag, { color: palette.primary }]} numberOfLines={1}>
+        {categoryLabel}
+      </Text>
+      <Text style={styles.challengeTitle} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {(challengeName || "").toUpperCase()}
+      </Text>
+      <View
         style={[
-          styles.scoreLabel,
-          { top: isKing ? 1460 : 1280, color: THEME.textMuted },
+          styles.categoryCircle,
+          {
+            backgroundColor: hexToRgba(palette.primary, 0.2),
+            borderColor: palette.primary,
+          },
         ]}
       >
-        {t.scoreLabel}
+        <Text style={styles.categoryEmoji} allowFontScaling={false}>
+          {categoryEmoji}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.cardSeparator,
+          { backgroundColor: hexToRgba(palette.primary, 0.4) },
+        ]}
+      />
+
+      {/* === SECTION 2 — Tier metadata === */}
+      <Text
+        style={[styles.tierStars, { color: palette.primary }]}
+        allowFontScaling={false}
+      >
+        {stars}
+      </Text>
+      <Text style={styles.tierLabel}>{tierLabel}</Text>
+      <Text style={[styles.tierRank, { color: palette.primary }]}>{rankLabel}</Text>
+
+      {/* === SECTION 3 — Score géant === */}
+      <View style={styles.scoreSection}>
+        <Text style={styles.scoreText} allowFontScaling={false}>
+          {displayScore}
+        </Text>
+      </View>
+
+      {/* === SECTION 4 — Sous-titre score === */}
+      <Text style={styles.scoreXpLabel}>{scoreXpLabel}</Text>
+
+      {/* === SECTION 5 — Holder === */}
+      <Text style={styles.holderText} numberOfLines={1}>
+        HOLDER · @{safeUser.toUpperCase()}
       </Text>
 
-      {!isKing &&
-        (() => {
-          const egoBait = getEgoBait(badge, locale);
-          return (
-            <View style={styles.egoBaitBlock}>
-              <Text style={[styles.egoBaitLine, { color: THEME.textPrimary }]}>
-                {egoBait.line1}
-              </Text>
-              <Text
-                style={[
-                  styles.egoBaitLine,
-                  styles.egoBaitAccent,
-                  {
-                    color: THEME.scoreColorMid,
-                    textShadowColor: THEME.haloColor,
-                  },
-                ]}
-              >
-                {egoBait.line2}
-              </Text>
-            </View>
-          );
-        })()}
+      {/* === SECTION 6 — Performance bar === */}
+      <View
+        style={[
+          styles.perfBar,
+          {
+            borderColor: hexToRgba(palette.primary, 0.4),
+          },
+        ]}
+      >
+        <Text style={[styles.perfBarLabel, { color: palette.primary }]}>
+          {performanceLabel}
+        </Text>
+        <Text
+          style={styles.perfBarMain}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {(challengeName || "").toUpperCase()}
+          <Text> — </Text>
+          <Text style={{ color: palette.primary }}>{performance}</Text>
+        </Text>
+      </View>
 
-      <View style={[styles.statsRow, { top: isKing ? 1490 : 1510 }]}>
-        <View style={[styles.statCard, { borderColor: THEME.borderSubtle }]}>
-          <Text style={[styles.statLabel, { color: THEME.textMuted }]}>{t.statPerformance}</Text>
-          <Text
-            style={[styles.statValue, { color: THEME.textPrimary }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.6}
-          >
-            {performance}
-          </Text>
-        </View>
+      {/* === SECTION 7 — Stats footer 3 colonnes === */}
+      <View style={styles.statsRow}>
         <View
           style={[
-            styles.statCard,
-            { borderColor: THEME.borderAccent, borderWidth: 1.5 },
+            styles.statCell,
+            { borderColor: hexToRgba(palette.primary, 0.6) },
           ]}
         >
-          <Text style={[styles.statLabel, { color: THEME.textMuted }]}>{t.statRank}</Text>
+          <Text style={styles.statCellLabel}>{rankCellLabel}</Text>
           <Text
-            style={[
-              styles.statValue,
-              {
-                color: THEME.accentColor,
-                textShadowColor: THEME.accentColor,
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: 8,
-              },
-            ]}
+            style={[styles.statCellValue, { color: palette.primary }]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.6}
@@ -414,243 +429,478 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
             #{rank}
           </Text>
         </View>
-      </View>
-
-      <View style={styles.ctaBlock}>
-        <Text style={[styles.ctaLine, { color: THEME.textPrimary }]}>{cta.top}</Text>
-        <Text
+        <View
           style={[
-            styles.ctaLine,
-            { color: THEME.accentColor, textShadowColor: THEME.accentColor },
-            styles.ctaAccent,
+            styles.statCell,
+            { borderColor: hexToRgba(palette.primary, 0.6) },
           ]}
         >
-          {cta.bottom}
+          <Text style={styles.statCellLabel}>{badgeCellLabel}</Text>
+          <Text
+            style={[styles.statCellValue, { color: palette.primary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            {palette.badgeName}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.statCell,
+            { borderColor: hexToRgba(palette.primary, 0.6) },
+          ]}
+        >
+          <Text style={styles.statCellLabel}>{catCellLabel}</Text>
+          <Text
+            style={[styles.statCellValue, { color: palette.primary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            {categoryLabelShort}
+          </Text>
+        </View>
+      </View>
+
+      {/* === SECTION 8 — Footer carte (bandeau) === */}
+      <View style={styles.cardFooterBanner}>
+        <Text style={styles.cardFooterText}>{officialText}</Text>
+        <View style={[styles.cardFooterDot, { backgroundColor: palette.primary }]} />
+        <Text style={styles.cardFooterText}>{verifiedText}</Text>
+      </View>
+
+      {/* === EGO-BAIT (hors carte) === */}
+      <Text style={styles.egoBaitLine1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        {egoBait.line1}
+      </Text>
+      <Text
+        style={[
+          styles.egoBaitLine2,
+          {
+            color: palette.primary,
+            textShadowColor: palette.primary,
+          },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+      >
+        {egoBait.line2}
+      </Text>
+
+      {/* === CTA "BATS-MOI" === */}
+      <View
+        style={[
+          styles.ctaButton,
+          {
+            borderColor: palette.primary,
+            shadowColor: palette.primary,
+          },
+        ]}
+      >
+        <Text style={styles.ctaText} numberOfLines={1}>
+          {ctaText}
         </Text>
       </View>
 
-      <Text style={[styles.footerUrl, { color: THEME.textMuted }]}>CHALLENGEME.PRO</Text>
+      {/* === URL === */}
+      <Text style={styles.footerUrl}>CHALLENGEME.PRO</Text>
     </View>
   );
 });
 
-// === STYLES ===
-
 const styles = StyleSheet.create({
-  card: {
+  canvas: {
     width: W,
     height: H,
     backgroundColor: "#000",
     overflow: "hidden",
   },
-  headerLeft: {
+  absolute: {
     position: "absolute",
-    top: 280,
-    left: 80,
+  },
+  absoluteFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+
+  // Header top bar
+  topBar: {
+    position: "absolute",
+    top: 30,
+    left: 50,
     flexDirection: "row",
     alignItems: "center",
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2.5,
+  topBarDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 14,
+  },
+  topBarText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 32,
+    letterSpacing: 1,
+  },
+
+  // Avatar + user
+  headerLeft: {
+    position: "absolute",
+    top: 100,
+    left: 50,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarFallback: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#FFA500",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitial: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 44,
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 36,
+    color: "#FFFFFF",
   },
-  headerText: {
-    marginLeft: 25,
+  headerLeftText: {
+    marginLeft: 18,
     maxWidth: 600,
   },
   username: {
     fontFamily: "Poppins_700Bold",
-    fontSize: 38,
+    fontSize: 36,
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
-  userTag: {
+  statusText: {
     fontFamily: "Poppins_400Regular",
-    fontSize: 22,
+    fontSize: 24,
+    color: "#888888",
     marginTop: 4,
   },
+
+  // Header right
   headerRight: {
     position: "absolute",
-    top: 280,
-    right: 80,
+    top: 100,
+    right: 50,
     alignItems: "flex-end",
   },
   brandName: {
     fontFamily: "Poppins_700Bold",
-    fontSize: 32,
+    fontSize: 36,
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
   brandSlogan: {
     fontFamily: "Poppins_500Medium",
-    fontSize: 14,
-    letterSpacing: 6,
-    marginTop: 8,
+    fontSize: 22,
+    letterSpacing: 4,
+    marginTop: 6,
   },
-  challengeBlock: {
+
+  // Card
+  card: {
     position: "absolute",
-    top: 460,
-    left: 80,
-    right: 80,
-    alignItems: "center",
+    top: 230,
+    left: 60,
+    width: 960,
+    height: 1240,
+    borderRadius: 32,
   },
-  challengeLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 18,
-    letterSpacing: 8,
-  },
-  challengeName: {
-    fontFamily: "Poppins_800ExtraBold",
-    fontSize: 60,
-    letterSpacing: -1,
-    marginTop: 16,
-    textAlign: "center",
-  },
-  kingBlock: {
+
+  // King crown overlay
+  kingCrown: {
     position: "absolute",
-    top: 600,
+    top: 178,
     left: 0,
     right: 0,
-    alignItems: "center",
-  },
-  kingTitle: {
-    fontFamily: "Poppins_800ExtraBold",
+    textAlign: "center",
     fontSize: 80,
-    letterSpacing: 20,
-    marginTop: 8,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    transform: [{ rotate: "-8deg" }],
   },
-  kingSubtitle: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 18,
-    letterSpacing: 10,
-    marginTop: 8,
-  },
-  kingChallengeLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 18,
-    letterSpacing: 8,
-    marginTop: 28,
-  },
-  kingChallengeName: {
-    fontFamily: "Poppins_800ExtraBold",
-    fontSize: 60,
-    letterSpacing: -1,
-    marginTop: 12,
-    paddingHorizontal: 80,
-    textAlign: "center",
-  },
-  scoreSection: {
+
+  // Section 1 — header carte
+  categoryTag: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
+    top: 280,
+    left: 110,
+    fontFamily: "Poppins_700Bold",
+    fontSize: 28,
+    letterSpacing: 4,
   },
-  scoreContainer: {
-    width: "100%",
+  challengeTitle: {
+    position: "absolute",
+    top: 320,
+    left: 110,
+    right: 220,
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 44,
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+    lineHeight: 50,
+  },
+  categoryCircle: {
+    position: "absolute",
+    top: 290,
+    right: 110,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "visible",
+  },
+  categoryEmoji: {
+    fontSize: 44,
+    lineHeight: 56,
+    textAlign: "center",
+  },
+  cardSeparator: {
+    position: "absolute",
+    top: 420,
+    left: 100,
+    right: 100,
+    height: 1,
+  },
+
+  // Section 2 — tier metadata
+  tierStars: {
+    position: "absolute",
+    top: 470,
+    left: 110,
+    fontFamily: "Poppins_700Bold",
+    fontSize: 32,
+    letterSpacing: 4,
+  },
+  tierLabel: {
+    position: "absolute",
+    top: 470,
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 36,
+    color: "#FFFFFF",
+    letterSpacing: 6,
+  },
+  tierRank: {
+    position: "absolute",
+    top: 478,
+    right: 110,
+    fontFamily: "Courier",
+    fontSize: 28,
+    letterSpacing: 1,
+  },
+
+  // Section 3 — score giant
+  scoreSection: {
+    position: "absolute",
+    top: 540,
+    left: 0,
+    right: 0,
+    height: 480,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreText: {
     fontFamily: "Poppins_800ExtraBold",
+    fontSize: 360,
+    lineHeight: 380,
+    color: "#FFFFFF",
     letterSpacing: -10,
     textAlign: "center",
     includeFontPadding: false,
-    paddingVertical: 30,
+    paddingVertical: 20,
   },
-  scoreLabel: {
+
+  // Section 4 — score subtitle
+  scoreXpLabel: {
     position: "absolute",
-    top: 1280,
+    top: 1040,
     left: 0,
     right: 0,
+    textAlign: "center",
     fontFamily: "Poppins_500Medium",
-    fontSize: 18,
+    fontSize: 26,
+    color: "#888888",
     letterSpacing: 8,
-    textAlign: "center",
   },
-  egoBaitBlock: {
+
+  // Section 5 — holder
+  holderText: {
     position: "absolute",
-    top: 1330,
+    top: 1110,
     left: 0,
     right: 0,
-    alignItems: "center",
-    paddingHorizontal: 80,
-  },
-  egoBaitLine: {
-    fontFamily: "Poppins_800ExtraBold",
-    fontSize: 76,
-    letterSpacing: -2,
     textAlign: "center",
-    lineHeight: 82,
-    marginBottom: 6,
+    fontFamily: "Poppins_500Medium",
+    fontSize: 24,
+    color: "#888888",
+    letterSpacing: 4,
   },
-  egoBaitAccent: {
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+
+  // Section 6 — performance bar
+  perfBar: {
+    position: "absolute",
+    top: 1170,
+    left: 110,
+    right: 110,
+    height: 70,
+    paddingHorizontal: 30,
+    backgroundColor: "#000000",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
+  perfBarLabel: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 18,
+    letterSpacing: 3,
+  },
+  perfBarMain: {
+    flex: 1,
+    textAlign: "right",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 26,
+    color: "#FFFFFF",
+    marginLeft: 16,
+  },
+
+  // Section 7 — stats footer
   statsRow: {
     position: "absolute",
-    top: 1510,
-    left: 60,
-    right: 60,
+    top: 1300,
+    left: 110,
+    right: 110,
+    height: 110,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  statCard: {
-    width: 460,
-    height: 100,
-    borderRadius: 24,
+  statCell: {
+    flex: 1,
+    marginHorizontal: 5,
     borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
   },
-  statLabel: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
-    letterSpacing: 4,
+  statCellLabel: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 18,
+    color: "#888888",
+    letterSpacing: 3,
     marginBottom: 6,
   },
-  statValue: {
+  statCellValue: {
     fontFamily: "Poppins_800ExtraBold",
-    fontSize: 48,
+    fontSize: 36,
     letterSpacing: -1,
   },
-  ctaBlock: {
+
+  // Section 8 — footer banner
+  cardFooterBanner: {
     position: "absolute",
-    top: 1620,
+    top: 1430,
+    left: 60,
+    right: 60,
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardFooterText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 18,
+    color: "#888888",
+    letterSpacing: 2,
+  },
+  cardFooterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 14,
+  },
+
+  // Ego-bait
+  egoBaitLine1: {
+    position: "absolute",
+    top: 1530,
     left: 0,
     right: 0,
-    alignItems: "center",
-  },
-  ctaLine: {
-    fontFamily: "Poppins_800ExtraBold",
-    fontSize: 48,
-    letterSpacing: -1,
+    paddingHorizontal: 80,
     textAlign: "center",
-    lineHeight: 50,
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 88,
+    lineHeight: 92,
+    color: "#FFFFFF",
+    letterSpacing: -2,
   },
-  ctaAccent: {
+  egoBaitLine2: {
+    position: "absolute",
+    top: 1626,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 80,
+    textAlign: "center",
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 88,
+    lineHeight: 92,
+    letterSpacing: -2,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 16,
   },
+
+  // CTA button
+  ctaButton: {
+    position: "absolute",
+    top: 1750,
+    left: (W - 380) / 2,
+    width: 380,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
+  },
+  ctaText: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 32,
+    color: "#000000",
+    letterSpacing: 2,
+  },
+
+  // URL
   footerUrl: {
     position: "absolute",
-    bottom: 180,
+    top: 1860,
     left: 0,
     right: 0,
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 22,
-    letterSpacing: 6,
     textAlign: "center",
+    fontFamily: "Poppins_500Medium",
+    fontSize: 22,
+    color: "#888888",
+    letterSpacing: 6,
   },
 });
