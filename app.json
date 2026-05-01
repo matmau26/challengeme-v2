@@ -14,7 +14,7 @@
     },
     "scheme": "challengeme",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.challengeme.proveyourself",
       "entitlements": {
         "aps-environment": "production"
