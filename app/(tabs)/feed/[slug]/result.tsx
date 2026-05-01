@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  StyleSheet,
   ActivityIndicator,
   Alert,
   Animated,
@@ -13,17 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import { FadeInView } from "@/src/components/ui/FadeInView";
-import {
-  ChevronLeft,
-  Crown,
-  Share2,
-  Trophy,
-  Flame,
-  ThumbsUp,
-  Sprout,
-} from "lucide-react-native";
-import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
+import { ChevronLeft, Share2 } from "lucide-react-native";
 import { useI18n } from "@/src/lib/i18n";
 import {
   getBadge,
@@ -39,10 +29,46 @@ import { formatTextUnits } from "@/src/lib/units";
 import { ShareCard } from "@/src/components/ShareCard";
 import { useUserProfile } from "@/src/hooks/useUserProfile";
 
+const TIER_PALETTES = {
+  rookie: { primary: "#4DAA7A", glow: "rgba(77, 170, 122, 0.6)", emoji: "🌱", stars: 1, label: "ROOKIE" },
+  solid:  { primary: "#00D4FF", glow: "rgba(0, 212, 255, 0.6)", emoji: "💪", stars: 2, label: "SOLID" },
+  beast:  { primary: "#00FF88", glow: "rgba(0, 255, 136, 0.6)", emoji: "🔥", stars: 3, label: "BEAST" },
+  elite:  { primary: "#FF6B35", glow: "rgba(255, 107, 53, 0.6)", emoji: "⚡", stars: 4, label: "ELITE" },
+  king:   { primary: "#FFD700", glow: "rgba(255, 215, 0, 0.7)", emoji: "👑", stars: 5, label: "KING" },
+} as const;
+
+const CATEGORY_LABEL = {
+  fr: {
+    muscle: "MUSCU",
+    fitness: "FITNESS",
+    football: "FOOT",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTRÊME",
+    flechette: "FLÉCHETTES",
+  },
+  en: {
+    muscle: "STRENGTH",
+    fitness: "FITNESS",
+    football: "FOOTBALL",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTREME",
+    flechette: "DARTS",
+  },
+} as const;
+
+const getCategoryLabel = (cat: string, lang: "fr" | "en"): string => {
+  const key = (cat || "").toLowerCase() as keyof typeof CATEGORY_LABEL.fr;
+  return CATEGORY_LABEL[lang][key] || (cat || "").toUpperCase();
+};
+
 const EGO_BAIT = {
   rookie: {
     fr: { line1: "J'ai osé.", line2: "Et toi ?" },
-    en: { line1: "I dared.", line2: "Did you?" },
+    en: { line1: "I dared.", line2: "You ?" },
   },
   solid: {
     fr: { line1: "Pas mal.", line2: "Fais mieux." },
@@ -50,50 +76,26 @@ const EGO_BAIT = {
   },
   beast: {
     fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
-    en: { line1: "Brutal performance.", line2: "Your move." },
+    en: { line1: "Brutal performance.", line2: "Your turn." },
   },
   elite: {
-    fr: { line1: "TOP 5% mondial.", line2: "Bats-moi si tu peux." },
-    en: { line1: "Top 5% worldwide.", line2: "Beat me if you can." },
+    fr: { line1: "TOP 5% MONDIAL.", line2: "Bats-moi si tu peux." },
+    en: { line1: "TOP 5% WORLDWIDE.", line2: "Beat me if you can." },
   },
   king: {
-    fr: { line1: "#1 mondial.", line2: "Personne ne fait mieux." },
-    en: { line1: "#1 worldwide.", line2: "Nobody does better." },
+    fr: { line1: "#1 MONDIAL.", line2: "PERSONNE NE FAIT MIEUX." },
+    en: { line1: "#1 WORLDWIDE.", line2: "NOBODY DOES BETTER." },
   },
 } as const;
 
-const getEgoBait = (badge: string, locale: string) => {
-  const validBadge = (badge in EGO_BAIT
-    ? badge
-    : "rookie") as keyof typeof EGO_BAIT;
-  const lang = (locale === "en" ? "en" : "fr") as "fr" | "en";
-  return EGO_BAIT[validBadge][lang];
-};
+const renderStars = (active: number, total: number = 5): string =>
+  "★".repeat(active) + "☆".repeat(total - active);
 
-const TIER_PALETTE = {
-  rookie: { primary: "#60A5FA", halo: "#60A5FA", iconColor: "#60A5FA", glow: "#60A5FA" },
-  solid:  { primary: "#00D4FF", halo: "#00D4FF", iconColor: "#00D4FF", glow: "#00D4FF" },
-  beast:  { primary: "#00FF88", halo: "#00FF88", iconColor: "#00FF88", glow: "#00FF88" },
-  elite:  { primary: "#FF6B35", halo: "#FF6B35", iconColor: "#FF6B35", glow: "#FF6B35" },
-  king:   { primary: "#FFD700", halo: "#FFD700", iconColor: "#FFD700", glow: "#FFD700" },
-} as const;
-
-const hexToRgba = (hex: string, alpha: number) => {
+const hexToRgba = (hex: string, alpha: number): string => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const renderTierIcon = (badge: string, color: string) => {
-  const props = { size: 18, strokeWidth: 2, color };
-  switch (badge) {
-    case "king":  return <Crown {...props} />;
-    case "elite": return <Trophy {...props} />;
-    case "beast": return <Flame {...props} />;
-    case "solid": return <ThumbsUp {...props} />;
-    default:      return <Sprout {...props} />;
-  }
 };
 
 export default function Result() {
@@ -115,7 +117,6 @@ export default function Result() {
   const shareCardRef = useRef<View>(null);
 
   const scoreScale = useRef(new Animated.Value(0.5)).current;
-  const haloOpacity = useRef(new Animated.Value(0.4)).current;
   const ctaScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -137,27 +138,6 @@ export default function Result() {
       useNativeDriver: true,
     }).start();
   }, [scoreScale]);
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(haloOpacity, {
-          toValue: 0.7,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(haloOpacity, {
-          toValue: 0.4,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [haloOpacity]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -232,8 +212,9 @@ export default function Result() {
   const rank = betterCount + 1;
   const percentileValue = (betterCount / totalAttempts) * 100;
   const badge = getBadge(percentileValue);
-  const isKing = badge === "king" && rank === 1;
-  const palette = TIER_PALETTE[badge as keyof typeof TIER_PALETTE] || TIER_PALETTE.rookie;
+  const palette = TIER_PALETTES[badge as keyof typeof TIER_PALETTES] || TIER_PALETTES.rookie;
+  const localeKey: "fr" | "en" = lang === "en" ? "en" : "fr";
+  const egoBait = EGO_BAIT[badge as keyof typeof EGO_BAIT][localeKey];
 
   const title = challenge
     ? formatTextUnits(
@@ -241,6 +222,8 @@ export default function Result() {
         unitSystem,
       )
     : "";
+
+  const categoryLabel = getCategoryLabel(challenge?.category || "", localeKey);
 
   const handleShare = async () => {
     try {
@@ -260,7 +243,7 @@ export default function Result() {
       }
       await Sharing.shareAsync(uri, {
         mimeType: "image/png",
-        dialogTitle: lang === "fr" ? "Partager ma performance" : "Share my performance",
+        dialogTitle: lang === "fr" ? "Partager ma carte" : "Share my card",
       });
     } catch (err) {
       console.warn("Share failed", err);
@@ -273,9 +256,9 @@ export default function Result() {
 
   if (challengeLoading || !challenge) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+      <SafeAreaView style={styles.loading}>
         <ActivityIndicator color="#00FF88" size="large" />
-        <Text className="text-muted-foreground text-sm mt-4">
+        <Text style={styles.loadingText}>
           {lang === "fr" ? "Chargement de ton exploit..." : "Loading your performance..."}
         </Text>
       </SafeAreaView>
@@ -283,18 +266,17 @@ export default function Result() {
   }
 
   const displayScore = Math.max(1, Math.min(100, Math.round(score)));
-  const handleRetry = () => {
+  const handleBack = () => {
     if (router.canDismiss()) router.dismiss();
     else router.back();
   };
 
+  const shareLabel = lang === "fr" ? "Partager ma carte" : "Share my card";
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top", "bottom"]}>
-      <View
-        style={{ position: "absolute", left: -10000, top: -10000 }}
-        pointerEvents="none"
-        collapsable={false}
-      >
+    <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
+      {/* offscreen ShareCard for capture */}
+      <View style={styles.offscreen} pointerEvents="none" collapsable={false}>
         <ShareCard
           ref={shareCardRef}
           locale={lang}
@@ -310,408 +292,337 @@ export default function Result() {
         />
       </View>
 
-      <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 }}>
-        <TouchableOpacity
-          onPress={handleRetry}
-          activeOpacity={0.7}
-          hitSlop={12}
-          style={{ alignSelf: "flex-start", padding: 4 }}
-        >
-          <ChevronLeft size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 24,
-          paddingBottom: 32,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ width: "100%", maxWidth: 480, alignItems: "stretch" }}>
-          <FadeInView duration={400} style={{ alignItems: "center", marginBottom: 32 }}>
-            <Text
-              style={{
-                fontFamily: "Poppins_500Medium",
-                fontSize: 12,
-                letterSpacing: 8,
-                color: "#7A8580",
-                textTransform: "uppercase",
-                marginBottom: 12,
-              }}
-            >
-              {lang === "fr" ? "Défi" : "Challenge"}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Poppins_800ExtraBold",
-                fontSize: 28,
-                letterSpacing: -1,
-                color: "#FFFFFF",
-                textAlign: "center",
-                textTransform: "uppercase",
-              }}
-              numberOfLines={2}
-            >
-              {title}
-            </Text>
-          </FadeInView>
-
-          <FadeInView
-            duration={500}
-            delay={100}
-            style={{ alignItems: "center", marginBottom: 24, overflow: "visible" }}
+      <View style={styles.main}>
+        {/* [1] HEADER — back only */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleBack}
+            activeOpacity={0.7}
+            hitSlop={12}
+            style={styles.backButton}
           >
-            <View
-              style={{
-                width: "100%",
-                minHeight: 240,
-                paddingVertical: 40,
-                paddingHorizontal: 60,
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "visible",
-                marginVertical: 16,
-              }}
-            >
-              <Animated.View
-                style={{
-                  opacity: haloOpacity,
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                pointerEvents="none"
-              >
-                <Svg
-                  width={320}
-                  height={240}
-                  viewBox="0 0 320 240"
-                  pointerEvents="none"
-                >
-                  <Defs>
-                    <RadialGradient
-                      id="scoreHalo"
-                      cx="50%"
-                      cy="50%"
-                      r="50%"
-                    >
-                      <Stop offset="0%" stopColor={palette.halo} stopOpacity={1} />
-                      <Stop offset="50%" stopColor={palette.halo} stopOpacity={0.25} />
-                      <Stop offset="100%" stopColor={palette.halo} stopOpacity={0} />
-                    </RadialGradient>
-                  </Defs>
-                  <Rect x="0" y="0" width="320" height="240" fill="url(#scoreHalo)" />
-                </Svg>
-              </Animated.View>
-              <Animated.View
-                style={{
-                  transform: [{ scale: scoreScale }],
-                  overflow: "visible",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Poppins_800ExtraBold",
-                    fontSize: 140,
-                    lineHeight: 180,
-                    letterSpacing: -6,
-                    color: palette.primary,
-                    textAlign: "center",
-                    textShadowColor: palette.glow,
-                    textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 12,
-                    includeFontPadding: false,
-                    paddingVertical: 20,
-                  }}
-                >
-                  {displayScore}
-                </Text>
-              </Animated.View>
-            </View>
-            <Text
-              style={{
-                fontFamily: "Poppins_500Medium",
-                fontSize: 11,
-                letterSpacing: 6,
-                color: "#7A8580",
-                textTransform: "uppercase",
-                marginTop: 8,
-              }}
-            >
-              Score / 100
-            </Text>
-          </FadeInView>
-
-          <FadeInView
-            duration={400}
-            delay={200}
-            style={{ alignItems: "center", marginBottom: 24 }}
-          >
-            {isKing ? (
-              <View style={{ alignItems: "center" }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Crown size={20} color={palette.primary} />
-                  <Text
-                    style={{
-                      fontFamily: "Poppins_800ExtraBold",
-                      fontSize: 24,
-                      letterSpacing: 8,
-                      color: palette.primary,
-                    }}
-                  >
-                    KING
-                  </Text>
-                </View>
-                <Text
-                  style={{
-                    fontFamily: "Poppins_500Medium",
-                    fontSize: 10,
-                    letterSpacing: 6,
-                    color: palette.primary,
-                    opacity: 0.7,
-                    marginTop: 6,
-                  }}
-                >
-                  {lang === "fr" ? "— #1 Mondial —" : "— #1 Worldwide —"}
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 12,
-                  paddingHorizontal: 24,
-                  borderRadius: 24,
-                  backgroundColor: hexToRgba(palette.primary, 0.08),
-                  borderWidth: 1.5,
-                  borderColor: hexToRgba(palette.primary, 0.25),
-                  gap: 10,
-                }}
-              >
-                {renderTierIcon(badge, palette.primary)}
-                <Text
-                  style={{
-                    fontFamily: "Poppins_700Bold",
-                    fontSize: 15,
-                    letterSpacing: 4,
-                    color: palette.primary,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {badge}
-                </Text>
-              </View>
-            )}
-          </FadeInView>
-
-          {!isKing &&
-            (() => {
-              const egoBait = getEgoBait(badge, lang);
-              return (
-                <FadeInView duration={400} delay={250}>
-                <View
-                  style={{
-                    width: "100%",
-                    alignItems: "center",
-                    marginVertical: 14,
-                    paddingHorizontal: 24,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Poppins_800ExtraBold",
-                      fontSize: 32,
-                      lineHeight: 36,
-                      letterSpacing: -1,
-                      color: "#FFFFFF",
-                      textAlign: "center",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {egoBait.line1}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Poppins_800ExtraBold",
-                      fontSize: 32,
-                      lineHeight: 36,
-                      letterSpacing: -1,
-                      color: palette.primary,
-                      textAlign: "center",
-                      textShadowColor: palette.glow,
-                      textShadowOffset: { width: 0, height: 0 },
-                      textShadowRadius: 6,
-                    }}
-                  >
-                    {egoBait.line2}
-                  </Text>
-                </View>
-              </FadeInView>
-            );
-          })()}
-
-          <FadeInView
-            duration={400}
-            delay={300}
-            style={{ flexDirection: "row", gap: 12, width: "100%", marginBottom: 32 }}
-          >
-            <View
-              style={{
-                flex: 1,
-                paddingVertical: 24,
-                paddingHorizontal: 16,
-                borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.05)",
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.08)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Poppins_600SemiBold",
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  color: "#7A8580",
-                  textTransform: "uppercase",
-                  marginBottom: 8,
-                }}
-              >
-                {lang === "fr" ? "Performance" : "Performance"}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Poppins_800ExtraBold",
-                  fontSize: 26,
-                  letterSpacing: -1,
-                  color: "#FFFFFF",
-                }}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
-              >
-                {displayValue}
-              </Text>
-            </View>
-            <View
-              style={{
-                flex: 1,
-                paddingVertical: 24,
-                paddingHorizontal: 16,
-                borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.05)",
-                borderWidth: isKing ? 1.5 : 1,
-                borderColor: isKing
-                  ? hexToRgba(palette.primary, 0.4)
-                  : "rgba(255,255,255,0.08)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Poppins_600SemiBold",
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  color: "#7A8580",
-                  textTransform: "uppercase",
-                  marginBottom: 8,
-                }}
-              >
-                {lang === "fr" ? "Rang Mondial" : "World Rank"}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Poppins_800ExtraBold",
-                  fontSize: 26,
-                  letterSpacing: -1,
-                  color: isKing ? palette.primary : "#FFFFFF",
-                }}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
-              >
-                #{rank}
-              </Text>
-            </View>
-          </FadeInView>
-
-          <FadeInView duration={400} delay={400}>
-            <Animated.View style={{ transform: [{ scale: ctaScale }], width: "100%" }}>
-              <TouchableOpacity
-                onPress={handleShare}
-                activeOpacity={0.85}
-                style={{
-                  width: "100%",
-                  paddingVertical: 18,
-                  borderRadius: 30,
-                  backgroundColor: palette.primary,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  shadowColor: palette.primary,
-                  shadowOpacity: 0.4,
-                  shadowRadius: 16,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: 8,
-                }}
-              >
-                <Share2 size={18} color="#000000" />
-                <Text
-                  style={{
-                    fontFamily: "Poppins_800ExtraBold",
-                    fontSize: 16,
-                    color: "#000000",
-                  }}
-                >
-                  {lang === "fr" ? "Partager ma performance" : "Share my performance"}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <TouchableOpacity
-              onPress={handleRetry}
-              activeOpacity={0.7}
-              style={{
-                width: "100%",
-                paddingVertical: 16,
-                borderRadius: 28,
-                borderWidth: 1.5,
-                borderColor: hexToRgba(palette.primary, 0.4),
-                backgroundColor: "transparent",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "row",
-                gap: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Poppins_600SemiBold",
-                  fontSize: 15,
-                  color: palette.primary,
-                  letterSpacing: 0,
-                }}
-              >
-                {lang === "fr" ? "Réessayer ce défi" : "Try again"}
-              </Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <ChevronLeft size={28} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+
+        {/* [2] CHALLENGE TITLE */}
+        <View style={styles.titleBlock}>
+          <Text style={[styles.categoryTag, { color: palette.primary }]} numberOfLines={1}>
+            {categoryLabel}
+          </Text>
+          <Text
+            style={styles.title}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {title}
+          </Text>
+        </View>
+
+        {/* [3] SCORE BLOCK */}
+        <View style={styles.scoreBlock}>
+          <Text
+            style={[styles.stars, { color: palette.primary }]}
+            allowFontScaling={false}
+          >
+            {renderStars(palette.stars)}
+          </Text>
+          <Animated.View style={{ transform: [{ scale: scoreScale }] }}>
+            <Text
+              style={[
+                styles.score,
+                {
+                  color: palette.primary,
+                  textShadowColor: palette.glow,
+                },
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              allowFontScaling={false}
+            >
+              {displayScore}
+            </Text>
+          </Animated.View>
+          <Text style={styles.scoreLabel}>SCORE / 100</Text>
+          <View
+            style={[
+              styles.tierPill,
+              {
+                backgroundColor: hexToRgba(palette.primary, 0.15),
+                borderColor: palette.primary,
+              },
+            ]}
+          >
+            <Text style={styles.tierEmoji} allowFontScaling={false}>
+              {palette.emoji}
+            </Text>
+            <Text style={[styles.tierLabel, { color: palette.primary }]}>
+              {palette.label}
+            </Text>
+          </View>
+        </View>
+
+        {/* [4] EGO-BAIT */}
+        <View style={styles.egoBlock}>
+          <Text
+            style={styles.egoLine1}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {egoBait.line1}
+          </Text>
+          <Text
+            style={[
+              styles.egoLine2,
+              { color: palette.primary, textShadowColor: palette.glow },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {egoBait.line2}
+          </Text>
+        </View>
+
+        {/* [5] STATS */}
+        <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statCell,
+              {
+                backgroundColor: hexToRgba(palette.primary, 0.05),
+                borderColor: hexToRgba(palette.primary, 0.4),
+              },
+            ]}
+          >
+            <Text style={styles.statLabel} numberOfLines={1}>
+              {lang === "fr" ? "PERFORMANCE" : "PERFORMANCE"}
+            </Text>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {displayValue}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statCell,
+              {
+                backgroundColor: hexToRgba(palette.primary, 0.05),
+                borderColor: hexToRgba(palette.primary, 0.4),
+              },
+            ]}
+          >
+            <Text style={styles.statLabel} numberOfLines={1}>
+              {lang === "fr" ? "RANG MONDIAL" : "WORLD RANK"}
+            </Text>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              #{rank}
+            </Text>
+          </View>
+        </View>
+
+        {/* [6] CTA */}
+        <View style={styles.ctaBlock}>
+          <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+            <TouchableOpacity
+              onPress={handleShare}
+              activeOpacity={0.85}
+              style={[
+                styles.ctaButton,
+                {
+                  backgroundColor: palette.primary,
+                  shadowColor: palette.glow,
+                },
+              ]}
+            >
+              <Share2 size={20} color="#000000" />
+              <Text style={styles.ctaText}>{shareLabel}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#000000" },
+  loading: {
+    flex: 1,
+    backgroundColor: "#000000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: "#888888",
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium",
+  },
+  offscreen: { position: "absolute", left: -10000, top: -10000 },
+
+  main: { flex: 1, justifyContent: "space-between" },
+
+  // [1] header
+  header: {
+    height: 60,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  backButton: { alignSelf: "flex-start", padding: 4 },
+
+  // [2] title
+  titleBlock: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    marginTop: 4,
+    maxHeight: 100,
+  },
+  categoryTag: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+    letterSpacing: 4,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    color: "#FFFFFF",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+
+  // [3] score
+  scoreBlock: { alignItems: "center", gap: 12, paddingHorizontal: 24 },
+  stars: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 28,
+    letterSpacing: 8,
+  },
+  score: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "900",
+    fontSize: 200,
+    lineHeight: 220,
+    letterSpacing: -8,
+    textAlign: "center",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 40,
+    includeFontPadding: false,
+  },
+  scoreLabel: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: "#888888",
+    letterSpacing: 4,
+    marginTop: 8,
+  },
+  tierPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  tierEmoji: { fontSize: 18 },
+  tierLabel: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 16,
+    letterSpacing: 4,
+  },
+
+  // [4] ego-bait
+  egoBlock: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    marginVertical: 24,
+  },
+  egoLine1: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  egoLine2: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: -0.5,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+    marginTop: 4,
+  },
+
+  // [5] stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 24,
+    height: 110,
+  },
+  statCell: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: "space-between",
+  },
+  statLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 11,
+    color: "#888888",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  statValue: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "900",
+    fontSize: 28,
+    color: "#FFFFFF",
+    letterSpacing: -1,
+  },
+
+  // [6] CTA
+  ctaBlock: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  ctaButton: {
+    height: 64,
+    borderRadius: 32,
+    paddingHorizontal: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 24,
+    shadowOpacity: 0.6,
+    elevation: 12,
+  },
+  ctaText: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "800",
+    fontSize: 18,
+    color: "#000000",
+  },
+});
