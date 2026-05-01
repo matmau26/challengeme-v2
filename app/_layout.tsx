@@ -3,6 +3,14 @@ import { Stack, useSegments, useRouter, useRootNavigationState } from "expo-rout
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LogLevel, OneSignal } from "react-native-onesignal";
+import { useFonts } from "expo-font";
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from "@expo-google-fonts/poppins";
 import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
 import { I18nProvider } from "@/src/lib/i18n";
 
@@ -41,6 +49,14 @@ function NavigationGuard() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+  });
+
   useEffect(() => {
     if (!ONESIGNAL_APP_ID) {
       console.warn("[OneSignal] EXPO_PUBLIC_ONESIGNAL_APP_ID is not set — skipping init.");
@@ -50,6 +66,8 @@ export default function RootLayout() {
     OneSignal.initialize(ONESIGNAL_APP_ID);
     OneSignal.Notifications.requestPermission(true);
   }, []);
+
+  if (!fontsLoaded) return null;
 
   return (
     <QueryClientProvider client={queryClient}>

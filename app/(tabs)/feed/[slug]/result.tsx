@@ -1,23 +1,21 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  StyleSheet,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Redirect } from "expo-router";
-// import { captureRef } from "react-native-view-shot"; // Disabled on Expo Go (missing native module RNViewShot)
-// import * as Sharing from "expo-sharing";
-import { FadeInView } from "@/src/components/ui/FadeInView";
-import {
-  Trophy, Share2, RefreshCcw, Home, Crown, Flame, ThumbsUp, Sprout, ListOrdered,
-} from "lucide-react-native";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
+import { ChevronLeft, Share2 } from "lucide-react-native";
 import { useI18n } from "@/src/lib/i18n";
 import {
-  BADGE_CONFIG,
   getBadge,
   formatValue,
   computeScore,
@@ -28,25 +26,76 @@ import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useUnitSystem } from "@/src/hooks/useUnitSystem";
 import { formatTextUnits } from "@/src/lib/units";
-// import { ShareCard } from "@/src/components/ShareCard"; // Disabled on Expo Go
+import { ShareCard } from "@/src/components/ShareCard";
+import { useUserProfile } from "@/src/hooks/useUserProfile";
 
-const renderBadgeIcon = (badge: string, color: string) => {
-  const props = { size: 52, strokeWidth: 1.5, color };
-  switch (badge) {
-    case "king":  return <Crown {...props} />;
-    case "elite": return <Trophy {...props} />;
-    case "beast": return <Flame {...props} />;
-    case "solid": return <ThumbsUp {...props} />;
-    default:      return <Sprout {...props} />;
-  }
+const TIER_PALETTES = {
+  rookie: { primary: "#4DAA7A", glow: "rgba(77, 170, 122, 0.6)", emoji: "🌱", stars: 1, label: "ROOKIE" },
+  solid:  { primary: "#00D4FF", glow: "rgba(0, 212, 255, 0.6)", emoji: "💪", stars: 2, label: "SOLID" },
+  beast:  { primary: "#00FF88", glow: "rgba(0, 255, 136, 0.6)", emoji: "🔥", stars: 3, label: "BEAST" },
+  elite:  { primary: "#FF6B35", glow: "rgba(255, 107, 53, 0.6)", emoji: "⚡", stars: 4, label: "ELITE" },
+  king:   { primary: "#FFD700", glow: "rgba(255, 215, 0, 0.7)", emoji: "👑", stars: 5, label: "KING" },
+} as const;
+
+const CATEGORY_LABEL = {
+  fr: {
+    muscle: "MUSCU",
+    fitness: "FITNESS",
+    football: "FOOT",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTRÊME",
+    flechette: "FLÉCHETTES",
+  },
+  en: {
+    muscle: "STRENGTH",
+    fitness: "FITNESS",
+    football: "FOOTBALL",
+    running: "RUNNING",
+    crossfit: "CROSSFIT",
+    hyrox: "HYROX",
+    extreme: "EXTREME",
+    flechette: "DARTS",
+  },
+} as const;
+
+const getCategoryLabel = (cat: string, lang: "fr" | "en"): string => {
+  const key = (cat || "").toLowerCase() as keyof typeof CATEGORY_LABEL.fr;
+  return CATEGORY_LABEL[lang][key] || (cat || "").toUpperCase();
 };
 
-const getBadgeMotivation = (badge: string, lang: string): string => {
-  if (badge === "king") return lang === "fr" ? "TU ES N\u00b01 MONDIAL. D\u00c9FENDS TON TR\u00d4NE." : "YOU ARE #1 WORLDWIDE. DEFEND YOUR THRONE.";
-  if (badge === "elite") return lang === "fr" ? "TOP 10% MONDIAL. Tu domines. Partage-le." : "TOP 10% WORLDWIDE. You dominate. Share it.";
-  if (badge === "beast") return lang === "fr" ? "TOP 30%. Solide. La prochaine fois tu vises Elite." : "TOP 30%. Solid. Next time aim for Elite.";
-  if (badge === "solid") return lang === "fr" ? "Bien jou\u00e9. Tu progresses. Reviens t'am\u00e9liorer." : "Good job. Keep improving. Come back for more.";
-  return lang === "fr" ? "Premier essai. Continue, tout le monde commence quelque part." : "First try. Keep going, everyone starts somewhere.";
+const EGO_BAIT = {
+  rookie: {
+    fr: { line1: "J'ai osé.", line2: "Et toi ?" },
+    en: { line1: "I dared.", line2: "You ?" },
+  },
+  solid: {
+    fr: { line1: "Pas mal.", line2: "Fais mieux." },
+    en: { line1: "Not bad.", line2: "Do better." },
+  },
+  beast: {
+    fr: { line1: "Performance brutale.", line2: "À toi de jouer." },
+    en: { line1: "Brutal performance.", line2: "Your turn." },
+  },
+  elite: {
+    fr: { line1: "TOP 5% MONDIAL.", line2: "Bats-moi si tu peux." },
+    en: { line1: "TOP 5% WORLDWIDE.", line2: "Beat me if you can." },
+  },
+  king: {
+    fr: { line1: "#1 MONDIAL.", line2: "PERSONNE NE FAIT MIEUX." },
+    en: { line1: "#1 WORLDWIDE.", line2: "NOBODY DOES BETTER." },
+  },
+} as const;
+
+const renderStars = (active: number, total: number = 5): string =>
+  "★".repeat(active) + "☆".repeat(total - active);
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 export default function Result() {
@@ -64,6 +113,11 @@ export default function Result() {
   const { unitSystem } = useUnitSystem();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: profile } = useUserProfile();
+  const shareCardRef = useRef<View>(null);
+
+  const scoreScale = useRef(new Animated.Value(0.5)).current;
+  const ctaScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["challenges-feed"] });
@@ -75,6 +129,37 @@ export default function Result() {
       queryClient.invalidateQueries({ queryKey: ["challenge-attempt-count", id] });
     }
   }, [queryClient, user?.id, id]);
+
+  useEffect(() => {
+    Animated.spring(scoreScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 80,
+      useNativeDriver: true,
+    }).start();
+  }, [scoreScale]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ctaScale, {
+          toValue: 1.02,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(ctaScale, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [ctaScale]);
+
   const rawValue = parseFloat(value || "0") || 0;
   const metricType = (metric || "time") as MetricType;
 
@@ -127,18 +212,9 @@ export default function Result() {
   const rank = betterCount + 1;
   const percentileValue = (betterCount / totalAttempts) * 100;
   const badge = getBadge(percentileValue);
-  const badgeConfig = BADGE_CONFIG[badge];
-  const isKing = badge === "king";
-  const isElite = badge === "elite";
-  const percentileDisplay = Math.max(1, Math.ceil(100 - percentileValue)).toString();
-
-  const badgeColor = {
-    king: "#EAB308",
-    elite: "#F59E0B",
-    beast: "#00FF87",
-    solid: "#60A5FA",
-    rookie: "#9CA3AF",
-  }[badge] || "#00FF87";
+  const palette = TIER_PALETTES[badge as keyof typeof TIER_PALETTES] || TIER_PALETTES.rookie;
+  const localeKey: "fr" | "en" = lang === "en" ? "en" : "fr";
+  const egoBait = EGO_BAIT[badge as keyof typeof EGO_BAIT][localeKey];
 
   const title = challenge
     ? formatTextUnits(
@@ -147,215 +223,406 @@ export default function Result() {
       )
     : "";
 
+  const categoryLabel = getCategoryLabel(challenge?.category || "", localeKey);
+
   const handleShare = async () => {
-    // Native share disabled in Expo Go (RNViewShot native module unavailable).
-    console.log("Partage natif désactivé sur Expo Go");
-    Alert.alert(
-      lang === "fr" ? "Partage" : "Share",
-      lang === "fr" ? "Bientôt disponible" : "Coming soon",
-    );
+    try {
+      if (!shareCardRef.current) return;
+      const uri = await captureRef(shareCardRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          lang === "fr"
+            ? "Le partage n'est pas pris en charge sur cet appareil."
+            : "Sharing is not supported on this device.",
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "image/png",
+        dialogTitle: lang === "fr" ? "Partager ma carte" : "Share my card",
+      });
+    } catch (err) {
+      console.warn("Share failed", err);
+      Alert.alert(
+        lang === "fr" ? "Erreur" : "Error",
+        lang === "fr" ? "Impossible de partager pour le moment." : "Unable to share right now.",
+      );
+    }
   };
 
   if (challengeLoading || !challenge) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator color="#00FF87" size="large" />
-        <Text className="text-muted-foreground text-sm mt-4">
+      <SafeAreaView style={styles.loading}>
+        <ActivityIndicator color="#00FF88" size="large" />
+        <Text style={styles.loadingText}>
           {lang === "fr" ? "Chargement de ton exploit..." : "Loading your performance..."}
         </Text>
       </SafeAreaView>
     );
   }
 
-  const goToTab = (href: "/(tabs)/leaderboard" | "/(tabs)/feed") => {
-    if (router.canDismiss()) router.dismissAll();
-    router.navigate(href);
+  const displayScore = Math.max(1, Math.min(100, Math.round(score)));
+  const handleBack = () => {
+    if (router.canDismiss()) router.dismiss();
+    else router.back();
   };
 
+  const shareLabel = lang === "fr" ? "Partager ma carte" : "Share my card";
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top", "bottom"]}>
-      {/* Hidden ShareCard capture disabled on Expo Go (RNViewShot native module unavailable). */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 24,
-          paddingVertical: 24,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-       <View className="w-full max-w-md items-stretch">
-        {/* Challenge header */}
-        <FadeInView duration={400} className="items-center mb-4">
-          <View className="px-3 py-0.5 rounded-full bg-muted/50 border border-border mb-2">
-            <Text className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              {lang === "fr" ? "D\u00e9fi Termin\u00e9" : "Challenge Completed"}
-            </Text>
-          </View>
+    <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
+      {/* offscreen ShareCard for capture */}
+      <View style={styles.offscreen} pointerEvents="none" collapsable={false}>
+        <ShareCard
+          ref={shareCardRef}
+          locale={lang}
+          username={profile?.username || ""}
+          avatarUrl={profile?.avatar_url || undefined}
+          challengeName={title}
+          score={score}
+          performance={displayValue}
+          rank={rank}
+          badge={badge}
+          totalAttempts={totalAttempts}
+          category={challenge?.category || ""}
+        />
+      </View>
+
+      <View style={styles.main}>
+        {/* [1] HEADER — back only */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleBack}
+            activeOpacity={0.7}
+            hitSlop={12}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* [2] CHALLENGE TITLE */}
+        <View style={styles.titleBlock}>
+          <Text style={[styles.categoryTag, { color: palette.primary }]} numberOfLines={1}>
+            {categoryLabel}
+          </Text>
           <Text
-            className="text-xl font-black text-foreground text-center uppercase italic"
+            style={styles.title}
             numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
           >
             {title}
           </Text>
-        </FadeInView>
+        </View>
 
-        {/* Badge hero */}
-        <FadeInView duration={500} delay={100} className="items-center mb-4">
-          <View
-            className={`p-4 rounded-full border-4 items-center justify-center ${
-              isKing ? "border-[#EAB308]" : isElite ? "border-[#F59E0B]" : "border-border"
-            }`}
-            style={{ backgroundColor: "#0F0F0F" }}
+        {/* [3] SCORE BLOCK */}
+        <View style={styles.scoreBlock}>
+          <Text
+            style={[styles.stars, { color: palette.primary }]}
+            allowFontScaling={false}
           >
-            {renderBadgeIcon(badge, badgeColor)}
-          </View>
-          <View
-            style={{
-              backgroundColor: isKing ? "#EAB308" : "transparent",
-              borderWidth: 1.5,
-              borderColor: badgeColor,
-              paddingVertical: 3,
-              paddingHorizontal: 14,
-              borderRadius: 20,
-              marginTop: -8,
-            }}
-          >
+            {renderStars(palette.stars)}
+          </Text>
+          <Animated.View style={{ transform: [{ scale: scoreScale }] }}>
             <Text
-              style={{
-                fontSize: 10,
-                fontWeight: "900",
-                color: isKing ? "#000" : badgeColor,
-                textTransform: "uppercase",
-                letterSpacing: 2,
-              }}
-            >
-              {lang === "fr" ? badgeConfig.label_fr : badgeConfig.label_en}
-            </Text>
-          </View>
-        </FadeInView>
-
-        {/* Score */}
-        <FadeInView duration={400} delay={200} className="items-center mb-4">
-          <Text
-            style={{
-              fontSize: 80,
-              fontWeight: "900",
-              color: "#FFFFFF",
-              lineHeight: 80,
-              letterSpacing: -3,
-            }}
-          >
-            {score.toLocaleString()}
-          </Text>
-          <View className="flex-row items-center gap-2 mt-6">
-            <View style={{ width: 24, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
-            <Text className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              XP Points
-            </Text>
-            <View style={{ width: 24, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
-          </View>
-        </FadeInView>
-
-        {/* Stats */}
-        <FadeInView duration={400} delay={300} className="w-full flex-row gap-2 mb-4">
-          {[
-            { label: "Performance", value: displayValue },
-            { label: lang === "fr" ? "Rang Mondial" : "World Rank", value: `#${rank}` },
-          ].map((s, i) => (
-            <View
-              key={i}
-              className="flex-1 bg-card/60 border border-border py-4 px-3 rounded-2xl items-center"
-            >
-              <Text className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                {s.label}
-              </Text>
-              <Text className="text-lg font-black text-primary italic" numberOfLines={1}>
-                {s.value}
-              </Text>
-            </View>
-          ))}
-        </FadeInView>
-
-        {/* Motivation */}
-        <FadeInView duration={400} delay={400} className="items-center mb-6 px-4">
-          <Text
-            className="text-[10px] font-black uppercase tracking-widest text-center leading-relaxed"
-            style={{ color: isKing ? "#EAB308" : isElite ? "#F59E0B" : "#888888" }}
-          >
-            {getBadgeMotivation(badge, lang)}
-          </Text>
-          {!isKing && (
-            <Text className="text-[10px] text-muted-foreground mt-1">
-              {lang === "fr" ? "Top " : "Top "}
-              <Text className="text-primary font-black">{percentileDisplay}%</Text>
-              {lang === "fr" ? " des athl\u00e8tes mondiaux" : " of worldwide athletes"}
-            </Text>
-          )}
-        </FadeInView>
-
-        {/* Action buttons */}
-        <FadeInView duration={400} delay={500} className="w-full gap-3">
-          <TouchableOpacity
-            onPress={handleShare}
-            activeOpacity={0.85}
-            className="w-full py-5 rounded-2xl bg-orange-500 flex-row items-center justify-center gap-2"
-            style={{
-              shadowColor: "#F97316",
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 6,
-            }}
-          >
-            <Share2 size={20} color="#000" />
-            <Text className="text-black font-black text-base uppercase tracking-wide">
-              {lang === "fr" ? "Partager ma performance" : "Share my performance"}
-            </Text>
-          </TouchableOpacity>
-
-          <View className="flex-row w-full justify-between gap-2">
-            {[
-              {
-                icon: <RefreshCcw size={14} color="#888888" />,
-                label: lang === "fr" ? "R\u00e9essayer" : "Try again",
-                onPress: () => {
-                  if (router.canDismiss()) router.dismiss();
-                  else router.back();
+              style={[
+                styles.score,
+                {
+                  color: palette.primary,
+                  textShadowColor: palette.glow,
                 },
-              },
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              allowFontScaling={false}
+            >
+              {displayScore}
+            </Text>
+          </Animated.View>
+          <Text style={styles.scoreLabel}>SCORE / 100</Text>
+          <View
+            style={[
+              styles.tierPill,
               {
-                icon: <ListOrdered size={14} color="#888888" />,
-                label: lang === "fr" ? "Classement" : "Leaderboard",
-                onPress: () => goToTab("/(tabs)/leaderboard"),
+                backgroundColor: hexToRgba(palette.primary, 0.15),
+                borderColor: palette.primary,
               },
-              {
-                icon: <Home size={14} color="#888888" />,
-                label: lang === "fr" ? "Accueil" : "Home",
-                onPress: () => goToTab("/(tabs)/feed"),
-              },
-            ].map((btn, i) => (
-              <TouchableOpacity
-                key={i}
-                onPress={btn.onPress}
-                className="flex-1 py-3 px-2 rounded-xl bg-muted/50 border border-border/50 flex-row items-center justify-center gap-2"
-              >
-                {btn.icon}
-                <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  className="text-muted-foreground font-bold text-[10px] uppercase"
-                >
-                  {btn.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            ]}
+          >
+            <Text style={styles.tierEmoji} allowFontScaling={false}>
+              {palette.emoji}
+            </Text>
+            <Text style={[styles.tierLabel, { color: palette.primary }]}>
+              {palette.label}
+            </Text>
           </View>
-        </FadeInView>
-       </View>
-      </ScrollView>
+        </View>
+
+        {/* [4] EGO-BAIT */}
+        <View style={styles.egoBlock}>
+          <Text
+            style={styles.egoLine1}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {egoBait.line1}
+          </Text>
+          <Text
+            style={[
+              styles.egoLine2,
+              { color: palette.primary, textShadowColor: palette.glow },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {egoBait.line2}
+          </Text>
+        </View>
+
+        {/* [5] STATS */}
+        <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statCell,
+              {
+                backgroundColor: hexToRgba(palette.primary, 0.05),
+                borderColor: hexToRgba(palette.primary, 0.4),
+              },
+            ]}
+          >
+            <Text style={styles.statLabel} numberOfLines={1}>
+              {lang === "fr" ? "PERFORMANCE" : "PERFORMANCE"}
+            </Text>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {displayValue}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statCell,
+              {
+                backgroundColor: hexToRgba(palette.primary, 0.05),
+                borderColor: hexToRgba(palette.primary, 0.4),
+              },
+            ]}
+          >
+            <Text style={styles.statLabel} numberOfLines={1}>
+              {lang === "fr" ? "RANG MONDIAL" : "WORLD RANK"}
+            </Text>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              #{rank}
+            </Text>
+          </View>
+        </View>
+
+        {/* [6] CTA */}
+        <View style={styles.ctaBlock}>
+          <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+            <TouchableOpacity
+              onPress={handleShare}
+              activeOpacity={0.85}
+              style={[
+                styles.ctaButton,
+                {
+                  backgroundColor: palette.primary,
+                  shadowColor: palette.glow,
+                },
+              ]}
+            >
+              <Share2 size={20} color="#000000" />
+              <Text style={styles.ctaText}>{shareLabel}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#000000" },
+  loading: {
+    flex: 1,
+    backgroundColor: "#000000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: "#888888",
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium",
+  },
+  offscreen: { position: "absolute", left: -10000, top: -10000 },
+
+  main: { flex: 1, justifyContent: "space-between" },
+
+  // [1] header
+  header: {
+    height: 60,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  backButton: { alignSelf: "flex-start", padding: 4 },
+
+  // [2] title
+  titleBlock: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    marginTop: 4,
+    maxHeight: 100,
+  },
+  categoryTag: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 14,
+    letterSpacing: 4,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    color: "#FFFFFF",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+
+  // [3] score
+  scoreBlock: { alignItems: "center", gap: 12, paddingHorizontal: 24 },
+  stars: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 28,
+    letterSpacing: 8,
+  },
+  score: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "900",
+    fontSize: 200,
+    lineHeight: 220,
+    letterSpacing: -8,
+    textAlign: "center",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 40,
+    includeFontPadding: false,
+  },
+  scoreLabel: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: "#888888",
+    letterSpacing: 4,
+    marginTop: 8,
+  },
+  tierPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  tierEmoji: { fontSize: 18 },
+  tierLabel: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 16,
+    letterSpacing: 4,
+  },
+
+  // [4] ego-bait
+  egoBlock: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    marginVertical: 24,
+  },
+  egoLine1: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  egoLine2: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: -0.5,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+    marginTop: 4,
+  },
+
+  // [5] stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 24,
+    height: 110,
+  },
+  statCell: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: "space-between",
+  },
+  statLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 11,
+    color: "#888888",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  statValue: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "900",
+    fontSize: 28,
+    color: "#FFFFFF",
+    letterSpacing: -1,
+  },
+
+  // [6] CTA
+  ctaBlock: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  ctaButton: {
+    height: 64,
+    borderRadius: 32,
+    paddingHorizontal: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 24,
+    shadowOpacity: 0.6,
+    elevation: 12,
+  },
+  ctaText: {
+    fontFamily: "Poppins_800ExtraBold",
+    fontWeight: "800",
+    fontSize: 18,
+    color: "#000000",
+  },
+});

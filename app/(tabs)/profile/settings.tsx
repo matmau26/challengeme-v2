@@ -185,7 +185,6 @@ export default function SettingsScreen() {
     if (!user) return;
     if (!validateUsername(username)) return;
     setSaving(true);
-    await supabase.auth.updateUser({ data: { language: lang } });
     const { error } = await supabase
       .from("users")
       .update({

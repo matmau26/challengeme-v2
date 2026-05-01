@@ -2,7 +2,7 @@
   "expo": {
     "name": "challengeme-v2",
     "slug": "challengeme-v2",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,9 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "NSLocationWhenInUseUsageDescription": "ChallengeMe peut utiliser votre localisation approximative pour afficher les classements par pays et région.",
         "NSCameraUsageDescription": "ChallengeMe utilise l'appareil photo pour capturer votre avatar et les preuves de vos performances.",
         "NSPhotoLibraryUsageDescription": "ChallengeMe accède à vos photos pour choisir votre avatar et partager vos performances.",
@@ -58,7 +60,8 @@
           "devTeam": "N8T95UXCS9",
           "iPhoneDeploymentTarget": "15.1"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "router": {},
